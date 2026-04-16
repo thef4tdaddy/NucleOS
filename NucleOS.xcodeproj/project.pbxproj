@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		0D4E4E902F9180730069B310 /* NucleOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NucleOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +39,7 @@
 			isa = PBXGroup;
 			children = (
 				0D4E4E4F2F9123CA0069B310 /* NucleOS */,
+				AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */,
 				0D4E4E902F9180730069B310 /* NucleOS.app */,
 			);
 			sourceTree = "<group>";
