@@ -25,45 +25,45 @@ struct SidebarView: View {
             .padding(.bottom, 32)
 
             // Navigation items
-            ScrollView {
+            ScrollView(content: {
                 VStack(spacing: 4) {
                     // Main section
                     SectionLabel(title: "MAIN")
 
-                    ForEach([NavigationItem.dashboard, .tasks, .calendar, .health]) { item in
+                    ForEach([NavigationItem.dashboard, .tasks, .calendar, .health], content: { item in
                         NavigationItemRow(
                             item: item,
                             isSelected: selectedItem == item,
                             action: { selectedItem = item }
                         )
-                    }
+                    })
 
                     // AI section
                     SectionLabel(title: "AI")
                         .padding(.top, 16)
 
-                    ForEach([NavigationItem.aiBriefing, .focus]) { item in
+                    ForEach([NavigationItem.aiBriefing, .focus], content: { item in
                         NavigationItemRow(
                             item: item,
                             isSelected: selectedItem == item,
                             action: { selectedItem = item }
                         )
-                    }
+                    })
 
                     // Other section
                     SectionLabel(title: "OTHER")
                         .padding(.top, 16)
 
-                    ForEach([NavigationItem.shared, .settings]) { item in
+                    ForEach([NavigationItem.shared, .settings], content: { item in
                         NavigationItemRow(
                             item: item,
                             isSelected: selectedItem == item,
                             action: { selectedItem = item }
                         )
-                    }
+                    })
                 }
                 .padding(.horizontal, 12)
-            }
+            })
 
             Spacer()
 
@@ -101,7 +101,7 @@ struct NavigationItemRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: action, label: {
             HStack(spacing: 12) {
                 // Purple dot indicator
                 Circle()
@@ -127,7 +127,7 @@ struct NavigationItemRow: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.accentPrimary.opacity(0.15) : Color.clear)
             )
-        }
+        })
         .buttonStyle(.plain)
     }
 }
