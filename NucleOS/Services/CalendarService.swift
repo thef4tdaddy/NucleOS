@@ -5,6 +5,7 @@
 //  Protocol, real implementation, and mock for Calendar / EventKit events
 //
 
+import EventKit
 import Foundation
 
 // MARK: - Protocol
@@ -20,29 +21,105 @@ protocol CalendarServiceProtocol {
 // MARK: - Errors
 
 enum CalendarServiceError: LocalizedError {
-    case notImplemented
+    case permissionDenied
+    case fetchFailed(Error)
 
     var errorDescription: String? {
         switch self {
-        case .notImplemented:
-            return "CalendarService is not implemented yet. EventKit integration is still pending."
+        case .permissionDenied:
+            return "Calendar access was denied. Please grant permission in System Settings."
+        case .fetchFailed(let error):
+            return "Failed to fetch events: \(error.localizedDescription)"
         }
     }
 }
 
 // MARK: - Real Implementation
 
-/// Concrete implementation that will integrate with EventKit Calendar.
+/// Concrete implementation that integrates with EventKit Calendar.
+@MainActor
 class CalendarService: CalendarServiceProtocol {
+    private let eventStore = EKEventStore()
+    private let permissionsManager = PermissionsManager.shared
 
     func fetchTodayEvents() async throws -> [NucleEvent] {
-        // TODO: Request EventKit authorization and fetch today's EKEvents
-        throw CalendarServiceError.notImplemented
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return []
+        }
+
+        return try await fetchEvents(from: startOfDay, to: endOfDay)
     }
 
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
-        // TODO: Fetch EKEvents in a date range of [now, now + days]
-        throw CalendarServiceError.notImplemented
+        guard days > 0 else { return [] }
+
+        let startDate = Date()
+        guard let endDate = Calendar.current.date(byAdding: .day, value: days, to: startDate) else {
+            return []
+        }
+
+        return try await fetchEvents(from: startDate, to: endDate)
+    }
+
+    // MARK: - Private Helpers
+
+    private func fetchEvents(from startDate: Date, to endDate: Date) async throws -> [NucleEvent] {
+        // Check and request permissions if needed
+        if permissionsManager.calendarAuthStatus == .notDetermined {
+            _ = await permissionsManager.requestCalendarAccess()
+        }
+
+        guard permissionsManager.hasCalendarAccess else {
+            throw CalendarServiceError.permissionDenied
+        }
+
+        let calendars = eventStore.calendars(for: .event)
+        let predicate = eventStore.predicateForEvents(
+            withStart: startDate,
+            end: endDate,
+            calendars: calendars
+        )
+
+        let ekEvents = eventStore.events(matching: predicate)
+        return ekEvents.compactMap { convertToNucleEvent(from: $0) }
+    }
+
+    private func convertToNucleEvent(from ekEvent: EKEvent) -> NucleEvent? {
+        guard let title = ekEvent.title, !title.isEmpty else {
+            return nil
+        }
+
+        // Convert EKCalendar color to EventColor
+        let eventColor: EventColor
+        if let cgColor = ekEvent.calendar?.cgColor {
+            let hexString = cgColorToHex(cgColor)
+            eventColor = .custom(hexString)
+        } else {
+            eventColor = .accentPrimary
+        }
+
+        return NucleEvent(
+            title: title,
+            startDate: ekEvent.startDate,
+            endDate: ekEvent.endDate,
+            calendarColor: eventColor,
+            isAllDay: ekEvent.isAllDay,
+            location: ekEvent.location
+        )
+    }
+
+    private func cgColorToHex(_ cgColor: CGColor) -> String {
+        guard let components = cgColor.components, components.count >= 3 else {
+            return "5b3fd4" // Default to accentPrimary
+        }
+
+        let red = Int(components[0] * 255)
+        let green = Int(components[1] * 255)
+        let blue = Int(components[2] * 255)
+
+        return String(format: "%02x%02x%02x", red, green, blue)
     }
 }
 

@@ -5,6 +5,7 @@
 //  Protocol, real implementation, and mock for Reminders / EventKit tasks
 //
 
+import EventKit
 import Foundation
 
 // MARK: - Protocol
@@ -19,39 +20,97 @@ protocol RemindersServiceProtocol {
 // MARK: - Errors
 
 enum RemindersServiceError: LocalizedError {
+    case permissionDenied
+    case fetchFailed(Error)
     case unimplemented
 
     var errorDescription: String? {
         switch self {
+        case .permissionDenied:
+            return "Reminders access was denied. Please grant permission in System Settings."
+        case .fetchFailed(let error):
+            return "Failed to fetch reminders: \(error.localizedDescription)"
         case .unimplemented:
-            return "RemindersService is not implemented yet. EventKit integration is still pending."
+            return "This feature is not implemented yet."
         }
     }
 }
 
 // MARK: - Real Implementation
 
-/// Concrete implementation that will integrate with EventKit Reminders.
+/// Concrete implementation that integrates with EventKit Reminders.
+@MainActor
 class RemindersService: RemindersServiceProtocol {
+    private let eventStore = EKEventStore()
+    private let permissionsManager = PermissionsManager.shared
 
     func fetchTasks() async throws -> [NucleTask] {
-        // TODO: Request EventKit authorization and fetch reminders
-        throw RemindersServiceError.unimplemented
+        // Check and request permissions if needed
+        if permissionsManager.remindersAuthStatus == .notDetermined {
+            _ = await permissionsManager.requestRemindersAccess()
+        }
+
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        do {
+            let calendars = eventStore.calendars(for: .reminder)
+            let predicate = eventStore.predicateForReminders(in: calendars)
+
+            let ekReminders = try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<[EKReminder], Error>) in
+                eventStore.fetchReminders(matching: predicate) { ekReminders in
+                    if let ekReminders = ekReminders {
+                        continuation.resume(returning: ekReminders)
+                    } else {
+                        continuation.resume(returning: [])
+                    }
+                }
+            }
+
+            return ekReminders.compactMap { convertToNucleTask(from: $0) }
+        } catch {
+            throw RemindersServiceError.fetchFailed(error)
+        }
     }
 
     func addTask(_ task: NucleTask) async throws {
-        // TODO: Create EKReminder and save to default Reminders list
         throw RemindersServiceError.unimplemented
     }
 
     func completeTask(_ task: NucleTask) async throws {
-        // TODO: Mark corresponding EKReminder as completed
         throw RemindersServiceError.unimplemented
     }
 
     func deleteTask(_ task: NucleTask) async throws {
-        // TODO: Remove EKReminder from the store
         throw RemindersServiceError.unimplemented
+    }
+
+    // MARK: - Private Helpers
+
+    private func convertToNucleTask(from ekReminder: EKReminder) -> NucleTask? {
+        guard let title = ekReminder.title, !title.isEmpty else {
+            return nil
+        }
+
+        let priority: NucleTask.Priority
+        switch ekReminder.priority {
+        case 1...3:
+            priority = .high
+        case 4...6:
+            priority = .medium
+        default:
+            priority = .low
+        }
+
+        return NucleTask(
+            title: title,
+            isCompleted: ekReminder.isCompleted,
+            dueDate: ekReminder.dueDateComponents?.date,
+            notes: ekReminder.notes,
+            priority: priority
+        )
     }
 }
 
