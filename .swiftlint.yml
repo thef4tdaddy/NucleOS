@@ -7,18 +7,9 @@ opt_in_rules:
   - force_unwrapping
   - force_cast
   - empty_count
-  - unused_import
 
-rules:
-  - force_unwrapping
-  - force_cast
-  - line_length
-  - file_length
-  - function_body_length
-  - type_body_length
-  - cyclomatic_complexity
+analyzer_rules:
   - unused_import
-  - empty_count
 
 line_length:
   warning: 120

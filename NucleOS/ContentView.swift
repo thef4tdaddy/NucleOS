@@ -12,34 +12,38 @@ struct ContentView: View {
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView(selectedItem: $selectedItem)
-        } detail: {
-            Group {
-                switch selectedItem {
-                case .dashboard:
-                    DashboardView()
-                case .tasks:
-                    PlaceholderView(title: "Tasks")
-                case .calendar:
-                    PlaceholderView(title: "Calendar")
-                case .health:
-                    PlaceholderView(title: "Health")
-                case .aiBriefing:
-                    PlaceholderView(title: "AI Briefing")
-                case .focus:
-                    PlaceholderView(title: "Focus")
-                case .shared:
-                    PlaceholderView(title: "Shared")
-                case .settings:
-                    PlaceholderView(title: "Settings")
-                case .none:
-                    PlaceholderView(title: "Select an item")
+        NavigationSplitView(
+            columnVisibility: $columnVisibility,
+            sidebar: {
+                SidebarView(selectedItem: $selectedItem)
+            },
+            detail: {
+                Group {
+                    switch selectedItem {
+                    case .dashboard:
+                        DashboardView()
+                    case .tasks:
+                        PlaceholderView(title: "Tasks")
+                    case .calendar:
+                        PlaceholderView(title: "Calendar")
+                    case .health:
+                        PlaceholderView(title: "Health")
+                    case .aiBriefing:
+                        PlaceholderView(title: "AI Briefing")
+                    case .focus:
+                        PlaceholderView(title: "Focus")
+                    case .shared:
+                        PlaceholderView(title: "Shared")
+                    case .settings:
+                        PlaceholderView(title: "Settings")
+                    case .none:
+                        PlaceholderView(title: "Select an item")
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.backgroundPrimary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.backgroundPrimary)
-        }
+        )
         .navigationSplitViewStyle(.balanced)
     }
 }
