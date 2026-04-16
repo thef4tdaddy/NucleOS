@@ -100,7 +100,9 @@ class MockRemindersService: RemindersServiceProtocol {
 
     func completeTask(_ task: NucleTask) async throws {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        tasks[index].isCompleted = true
+        var updated = tasks[index]
+        updated.isCompleted = true
+        tasks[index] = updated
     }
 
     func deleteTask(_ task: NucleTask) async throws {
