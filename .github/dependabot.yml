@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "dependabot"
+    labels:
+      - "devops"
+      - "developer-experience"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "dependabot"
+    labels:
+      - "devops"
+      - "developer-experience"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "dependabot"
+    labels:
+      - "devops"
+      - "developer-experience"
+    commit-message:
+      prefix: "chore(deps)"
