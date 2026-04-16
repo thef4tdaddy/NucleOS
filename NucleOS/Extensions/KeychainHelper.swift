@@ -54,8 +54,8 @@ enum KeychainHelper {
             kSecAttrAccessible: kSecAttrAccessibleWhenUnlocked
         ]
 
-        // Delete any existing item before saving
-        SecItemDelete(query as CFDictionary)
+        // Delete any existing item before saving (result intentionally ignored)
+        _ = SecItemDelete(query as CFDictionary)
 
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {
