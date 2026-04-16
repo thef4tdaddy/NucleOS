@@ -17,6 +17,7 @@ struct HealthWeeklyStepsCard: View {
     }
 
     private let stepGoal = 10_000
+    // TODO: Replace with real HealthKit weekly step counts once wired up
     private let weeklyData: [DayEntry] = [
         DayEntry(day: "Mon", steps: 9_200, isToday: false),
         DayEntry(day: "Tue", steps: 7_800, isToday: false),
@@ -112,6 +113,7 @@ private struct SleepStage {
 struct HealthSleepCard: View {
     let snapshot: HealthSnapshot
 
+    // TODO: Derive from HealthSnapshot sleep analysis once HealthKit is wired up
     private let stages: [SleepStage] = [
         SleepStage(label: "Deep",  duration: "1h 45m", color: .accentPrimary,  fraction: 0.25),
         SleepStage(label: "Light", duration: "3h 12m", color: .accentLight,    fraction: 0.46),

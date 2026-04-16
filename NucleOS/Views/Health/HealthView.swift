@@ -79,6 +79,7 @@ private struct HealthDetailGridView: View {
                 goal: snapshot.stepGoal.formatted(),
                 unit: "steps",
                 progress: snapshot.stepsProgress,
+                // TODO: Compute delta from HealthKit history once wired up
                 trend: "+12% from yesterday",
                 color: .accentLavender
             )
@@ -112,6 +113,7 @@ private struct HealthDetailGridView: View {
                 goal: Int(snapshot.calorieGoal).formatted(),
                 unit: "kcal",
                 progress: snapshot.caloriesProgress,
+                // TODO: Compute delta from HealthKit history once wired up
                 trend: "+5% from yesterday",
                 color: .accentWarm
             )
