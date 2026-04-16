@@ -12,7 +12,7 @@ import Foundation
 /// Strongly typed color token for calendar events.
 /// Use theme cases for events created inside the app; use `.custom` for colours
 /// supplied by EventKit (e.g. from the user's own calendars).
-enum EventColor: Sendable, Equatable {
+enum EventColor: Hashable, Sendable, Equatable {
     /// Accent purple — matches `Color.accentPrimary` (#5b3fd4)
     case accentPrimary
     /// Light accent purple — matches `Color.accentLight` (#7c5cf0)
@@ -35,7 +35,7 @@ enum EventColor: Sendable, Equatable {
 
 // MARK: - NucleEvent
 
-struct NucleEvent: Identifiable, Equatable, Sendable {
+struct NucleEvent: Identifiable, Hashable, Equatable, Sendable {
     let id: UUID
     var title: String
     var startDate: Date

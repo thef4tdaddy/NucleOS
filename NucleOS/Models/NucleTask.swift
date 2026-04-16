@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct NucleTask: Identifiable, Equatable, Sendable {
+struct NucleTask: Identifiable, Hashable, Equatable, Sendable {
     let id: UUID
     var title: String
     var isCompleted: Bool
@@ -15,7 +15,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var notes: String?
     var priority: Priority
 
-    enum Priority: Int, CaseIterable, Sendable {
+    enum Priority: Int, CaseIterable, Hashable, Sendable {
         case low = 0
         case medium = 1
         case high = 2
