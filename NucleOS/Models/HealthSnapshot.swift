@@ -21,19 +21,22 @@ struct HealthSnapshot: Identifiable, Hashable, Sendable {
     /// Progress towards the step goal, clamped to [0, 1].
     var stepsProgress: Double {
         guard stepGoal > 0 else { return 0 }
-        return min(Double(steps) / Double(stepGoal), 1.0)
+        let progress = Double(steps) / Double(stepGoal)
+        return max(0.0, min(progress, 1.0))
     }
 
     /// Progress towards the sleep goal, clamped to [0, 1].
     var sleepProgress: Double {
         guard sleepGoal > 0 else { return 0 }
-        return min(sleepDuration / sleepGoal, 1.0)
+        let progress = sleepDuration / sleepGoal
+        return max(0.0, min(progress, 1.0))
     }
 
     /// Progress towards the calorie goal, clamped to [0, 1].
     var caloriesProgress: Double {
         guard calorieGoal > 0 else { return 0 }
-        return min(activeCalories / calorieGoal, 1.0)
+        let progress = activeCalories / calorieGoal
+        return max(0.0, min(progress, 1.0))
     }
 
     /// Sleep duration formatted as a human-readable string (e.g. "7h 23m").
@@ -44,10 +47,15 @@ struct HealthSnapshot: Identifiable, Hashable, Sendable {
         return "\(hours)h \(minutes)m"
     }
 
-    /// Sleep goal formatted as a human-readable string (e.g. "8h").
+    /// Sleep goal formatted as a human-readable string (e.g. "8h" or "7h 30m").
     var sleepGoalFormatted: String {
-        let hours = Int(sleepGoal / 3600)
-        return "\(hours)h"
+        let totalMinutes = Int(sleepGoal / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if minutes == 0 {
+            return "\(hours)h"
+        }
+        return "\(hours)h \(minutes)m"
     }
 
     init(

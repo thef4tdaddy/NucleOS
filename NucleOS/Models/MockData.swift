@@ -3,7 +3,8 @@
 //  NucleOS
 //
 //  Centralized mock data for SwiftUI previews and development.
-//  All dates are relative to today so previews always look current.
+//  Tasks and events are computed properties so dates are always relative
+//  to the current day — previews and long-lived sessions stay accurate.
 //
 
 import Foundation
@@ -12,7 +13,8 @@ enum MockData {
 
     // MARK: - Tasks
 
-    static let tasks: [NucleTask] = {
+    /// Returns a fresh set of tasks relative to the current calendar day.
+    static var tasks: [NucleTask] {
         let today = Calendar.current.startOfDay(for: Date())
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today
 
@@ -62,11 +64,12 @@ enum MockData {
                 priority: .high
             ),
         ]
-    }()
+    }
 
     // MARK: - Events
 
-    static let events: [NucleEvent] = {
+    /// Returns a fresh set of today's events relative to the current calendar day.
+    static var events: [NucleEvent] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
@@ -108,7 +111,7 @@ enum MockData {
                 calendarColor: .custom("ff6b6b")
             ),
         ]
-    }()
+    }
 
     // MARK: - Health
 
@@ -124,12 +127,18 @@ enum MockData {
 
     // MARK: - AI Briefing
 
-    static let aiBriefing: String = """
-        Good morning! Here's your daily briefing:
+    /// Returns a fresh briefing string reflecting the current mock data.
+    static var aiBriefing: String {
+        let snapshot = healthSnapshot
+        let currentTasks = tasks
+        let currentEvents = events
+        return """
+            Good morning! Here's your daily briefing:
 
-        • You have \(events.count) events today, including a design sync at 2 PM.
-        • You're \(Int(healthSnapshot.stepsProgress * 100))% towards your step goal — consider a walk after lunch.
-        • \(tasks.filter { !$0.isCompleted && $0.priority == .high }.count) high-priority tasks are still open today.
-        • Your sleep was \(healthSnapshot.sleepFormatted) last night, slightly below your \(healthSnapshot.sleepGoalFormatted) goal.
-        """
+            • You have \(currentEvents.count) events today, including a design sync at 2 PM.
+            • You're \(Int(snapshot.stepsProgress * 100))% towards your step goal — consider a walk after lunch.
+            • \(currentTasks.filter { !$0.isCompleted && $0.priority == .high }.count) high-priority tasks are still open today.
+            • Your sleep was \(snapshot.sleepFormatted) last night, slightly below your \(snapshot.sleepGoalFormatted) goal.
+            """
+    }
 }
