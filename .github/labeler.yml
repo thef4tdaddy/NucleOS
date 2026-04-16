@@ -1,0 +1,79 @@
+dashboard:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Dashboard/**'
+
+tasks:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Tasks/**'
+
+calendar:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Calendar/**'
+
+health:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Health/**'
+
+menubar:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Menubar/**'
+
+ui:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/**'
+
+foundation:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Extensions/**'
+    - any-glob-to-any-file: 'NucleOS/Models/**'
+
+apple-services:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Services/**'
+
+eventkit:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Services/RemindersService.swift'
+    - any-glob-to-any-file: 'NucleOS/Services/CalendarService.swift'
+
+healthkit:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Services/HealthService.swift'
+
+cloudkit:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Services/CloudKitService.swift'
+
+ai:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/AI/**'
+
+llm:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/AI/**'
+
+architecture:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS.xcodeproj/**'
+    - any-glob-to-any-file: 'NucleOS/NucleOSApp.swift'
+    - any-glob-to-any-file: 'NucleOS/ContentView.swift'
+
+devops:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+    - any-glob-to-any-file: '.swiftlint.yml'
+    - any-glob-to-any-file: 'commitlint.config.js'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: '*.md'
+    - any-glob-to-any-file: '**/*.md'
+
+settings:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/Views/Settings/**'
+
+permissions:
+  - changed-files:
+    - any-glob-to-any-file: 'NucleOS/NucleOS.entitlements'
+    - any-glob-to-any-file: 'NucleOS/Info.plist'
