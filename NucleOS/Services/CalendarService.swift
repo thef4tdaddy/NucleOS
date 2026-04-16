@@ -48,38 +48,11 @@ class CalendarService: CalendarServiceProtocol {
 
 // MARK: - Mock Implementation
 
-/// Mock implementation with realistic hardcoded data for SwiftUI previews and testing.
+/// Mock implementation backed by `MockData` for SwiftUI previews and testing.
 class MockCalendarService: CalendarServiceProtocol {
 
     func fetchTodayEvents() async throws -> [NucleEvent] {
-        let today = Date()
-        return [
-            NucleEvent(
-                title: "Team Standup",
-                startDate: calendar.date(bySettingHour: 9, minute: 0, second: 0, of: today) ?? today,
-                endDate: calendar.date(bySettingHour: 9, minute: 30, second: 0, of: today) ?? today,
-                calendarColor: .accentPrimary
-            ),
-            NucleEvent(
-                title: "Product Review",
-                startDate: calendar.date(bySettingHour: 11, minute: 0, second: 0, of: today) ?? today,
-                endDate: calendar.date(bySettingHour: 12, minute: 0, second: 0, of: today) ?? today,
-                calendarColor: .accentLavender,
-                location: "Conference Room B"
-            ),
-            NucleEvent(
-                title: "Design Sync",
-                startDate: calendar.date(bySettingHour: 14, minute: 0, second: 0, of: today) ?? today,
-                endDate: calendar.date(bySettingHour: 14, minute: 45, second: 0, of: today) ?? today,
-                calendarColor: .accentLight
-            ),
-            NucleEvent(
-                title: "1:1 with Manager",
-                startDate: calendar.date(bySettingHour: 16, minute: 30, second: 0, of: today) ?? today,
-                endDate: calendar.date(bySettingHour: 17, minute: 0, second: 0, of: today) ?? today,
-                calendarColor: .custom("ff6b6b")
-            )
-        ]
+        return MockData.events
     }
 
     /// Returns events over the next `days` days, starting from today.
