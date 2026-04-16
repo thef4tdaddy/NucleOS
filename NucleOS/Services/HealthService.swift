@@ -66,10 +66,10 @@ class HealthService: HealthServiceProtocol {
     /// All quantity/category types the dashboard reads.
     private static let readTypes: Set<HKObjectType> = {
         var types = Set<HKObjectType>()
-        if let steps    = HKQuantityType.quantityType(forIdentifier: .stepCount)          { types.insert(steps) }
-        if let hr       = HKQuantityType.quantityType(forIdentifier: .heartRate)           { types.insert(hr) }
-        if let calories = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) { types.insert(calories) }
-        if let sleep    = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)         { types.insert(sleep) }
+        if let steps     = HKQuantityType.quantityType(forIdentifier: .stepCount)          { types.insert(steps) }
+        if let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate)           { types.insert(heartRate) }
+        if let calories  = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) { types.insert(calories) }
+        if let sleep     = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)         { types.insert(sleep) }
         return types
     }()
 
@@ -112,7 +112,7 @@ class HealthService: HealthServiceProtocol {
                     return
                 }
                 let steps = result?.sumQuantity()?.doubleValue(for: .count()) ?? 0
-                continuation.resume(returning: Int(steps))
+                continuation.resume(returning: Int(steps.rounded()))
             }
             store.execute(query)
         }
