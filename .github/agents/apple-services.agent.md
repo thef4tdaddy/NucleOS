@@ -1,3 +1,9 @@
+---
+name: apple-services
+description: Custom Copilot cloud agent for apple-services
+target: github-copilot
+---
+
 # NucleOS — Apple Services Agent
 
 Use this agent for EventKit, HealthKit, and CloudKit work.

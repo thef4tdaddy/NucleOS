@@ -1,3 +1,9 @@
+---
+name: nucleos
+description: Custom Copilot cloud agent for nucleos
+target: github-copilot
+---
+
 # NucleOS — Main Agent
 
 Read CLAUDE.md first. Always. It has the full vision, design tokens, architecture, and build order.

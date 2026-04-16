@@ -1,3 +1,9 @@
+---
+name: ai-layer
+description: Custom Copilot cloud agent for ai-layer
+target: github-copilot
+---
+
 # NucleOS — AI Layer Agent
 
 Use this agent for any LLM, MLX, or AI provider work.

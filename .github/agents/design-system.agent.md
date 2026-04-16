@@ -1,3 +1,9 @@
+---
+name: design-system
+description: Custom Copilot cloud agent for design-system
+target: github-copilot
+---
+
 # NucleOS — Design System Agent
 
 Use this agent for any UI, visual, or layout work.
