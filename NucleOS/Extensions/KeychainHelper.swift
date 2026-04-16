@@ -14,19 +14,23 @@ enum KeychainError: Error, LocalizedError {
     case saveFailed(OSStatus)
     case getFailed(OSStatus)
     case deleteFailed(OSStatus)
-    case itemNotFound
 
     var errorDescription: String? {
         switch self {
         case .saveFailed(let status):
-            return "Keychain save failed with status: \(status)"
+            return "Keychain save failed: \(KeychainError.message(for: status))"
         case .getFailed(let status):
-            return "Keychain get failed with status: \(status)"
+            return "Keychain get failed: \(KeychainError.message(for: status))"
         case .deleteFailed(let status):
-            return "Keychain delete failed with status: \(status)"
-        case .itemNotFound:
-            return "Keychain item not found"
+            return "Keychain delete failed: \(KeychainError.message(for: status))"
         }
+    }
+
+    private static func message(for status: OSStatus) -> String {
+        if let msg = SecCopyErrorMessageString(status, nil) as String? {
+            return "\(msg) (\(status))"
+        }
+        return "status: \(status)"
     }
 }
 
@@ -40,6 +44,8 @@ enum KeychainHelper {
     static let anthropicAPIKey = "com.nucleos.apikey.anthropic"
     static let openAIAPIKey = "com.nucleos.apikey.openai"
 
+    private static let service = "com.nucleos.NucleOS"
+
     // MARK: Save
 
     static func save(key: String, value: String) throws {
@@ -47,17 +53,26 @@ enum KeychainHelper {
             throw KeychainError.saveFailed(errSecParam)
         }
 
-        let query: [CFString: Any] = [
+        let deleteQuery: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: key
+        ]
+
+        let deleteStatus = SecItemDelete(deleteQuery as CFDictionary)
+        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
+            throw KeychainError.deleteFailed(deleteStatus)
+        }
+
+        let addQuery: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
             kSecAttrAccount: key,
             kSecValueData: data,
             kSecAttrAccessible: kSecAttrAccessibleWhenUnlocked
         ]
 
-        // Delete any existing item before saving (result intentionally ignored)
-        _ = SecItemDelete(query as CFDictionary)
-
-        let status = SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
         guard status == errSecSuccess else {
             throw KeychainError.saveFailed(status)
         }
@@ -68,6 +83,7 @@ enum KeychainHelper {
     static func get(key: String) throws -> String? {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
             kSecAttrAccount: key,
             kSecReturnData: true,
             kSecMatchLimit: kSecMatchLimitOne
@@ -95,6 +111,7 @@ enum KeychainHelper {
     static func delete(key: String) throws {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
             kSecAttrAccount: key
         ]
 
