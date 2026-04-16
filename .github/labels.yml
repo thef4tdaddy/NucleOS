@@ -1,0 +1,111 @@
+# GitHub Labels for NucleOS
+# Synced automatically via .github/workflows/labels.yml
+
+# Type labels
+- name: feat
+  color: 7c5cf0
+  description: New feature
+
+- name: fix
+  color: e11d48
+  description: Bug fix
+
+- name: style
+  color: c4b5fd
+  description: UI/visual changes
+
+- name: refactor
+  color: 6366f1
+  description: Code restructure
+
+- name: chore
+  color: 4a3580
+  description: Tooling and deps
+
+- name: docs
+  color: 0ea5e9
+  description: Documentation
+
+# Area labels
+- name: 'area: dashboard'
+  color: 5b3fd4
+  description: Dashboard view
+
+- name: 'area: tasks'
+  color: 7c3aed
+  description: Tasks and Reminders
+
+- name: 'area: calendar'
+  color: 6d28d9
+  description: Calendar and Events
+
+- name: 'area: health'
+  color: 4f46e5
+  description: HealthKit integration
+
+- name: 'area: ai'
+  color: 8b5cf6
+  description: AI and LLM layer
+
+- name: 'area: menubar'
+  color: a78bfa
+  description: Menu bar companion
+
+- name: 'area: cloudkit'
+  color: 818cf8
+  description: CloudKit and sync
+
+- name: 'area: sidebar'
+  color: c4b5fd
+  description: Sidebar navigation
+
+# Agent labels
+- name: 'agent: nucleos'
+  color: 1e1538
+  description: Main agent task
+
+- name: 'agent: design-system'
+  color: 2d1b69
+  description: Design system agent
+
+- name: 'agent: apple-services'
+  color: 1e3a5f
+  description: Apple services agent
+
+- name: 'agent: ai-layer'
+  color: 1a2e1a
+  description: AI layer agent
+
+# Priority labels
+- name: 'priority: critical'
+  color: ff0000
+  description: Must fix immediately
+
+- name: 'priority: high'
+  color: ff6b00
+  description: High priority
+
+- name: 'priority: medium'
+  color: ffcc00
+  description: Medium priority
+
+- name: 'priority: low'
+  color: 00cc44
+  description: Low priority
+
+# Status labels
+- name: 'status: ready'
+  color: 0075ca
+  description: Ready to work on
+
+- name: 'status: in progress'
+  color: e4e669
+  description: Currently being worked on
+
+- name: 'status: blocked'
+  color: d93f0b
+  description: Blocked by something
+
+- name: 'status: review'
+  color: 0052cc
+  description: In review
