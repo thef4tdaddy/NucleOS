@@ -10,8 +10,24 @@ import Foundation
 // MARK: - Protocol
 
 protocol CalendarServiceProtocol {
+    /// Returns all events occurring today (midnight-to-midnight in the user's time zone).
     func fetchTodayEvents() async throws -> [NucleEvent]
+    /// Returns events in the half-open range [today, today + days).
+    /// - Parameter days: Number of days to look ahead. Must be ≥ 1; passing 0 returns an empty array.
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent]
+}
+
+// MARK: - Errors
+
+enum CalendarServiceError: LocalizedError {
+    case notImplemented
+
+    var errorDescription: String? {
+        switch self {
+        case .notImplemented:
+            return "CalendarService is not implemented yet. EventKit integration is still pending."
+        }
+    }
 }
 
 // MARK: - Real Implementation
@@ -21,12 +37,12 @@ class CalendarService: CalendarServiceProtocol {
 
     func fetchTodayEvents() async throws -> [NucleEvent] {
         // TODO: Request EventKit authorization and fetch today's EKEvents
-        return []
+        throw CalendarServiceError.notImplemented
     }
 
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
         // TODO: Fetch EKEvents in a date range of [now, now + days]
-        return []
+        throw CalendarServiceError.notImplemented
     }
 }
 
@@ -42,31 +58,34 @@ class MockCalendarService: CalendarServiceProtocol {
                 title: "Team Standup",
                 startDate: calendar.date(bySettingHour: 9, minute: 0, second: 0, of: today) ?? today,
                 endDate: calendar.date(bySettingHour: 9, minute: 30, second: 0, of: today) ?? today,
-                calendarColor: "5b3fd4"
+                calendarColor: .accentPrimary
             ),
             NucleEvent(
                 title: "Product Review",
                 startDate: calendar.date(bySettingHour: 11, minute: 0, second: 0, of: today) ?? today,
                 endDate: calendar.date(bySettingHour: 12, minute: 0, second: 0, of: today) ?? today,
-                calendarColor: "c4b5fd",
+                calendarColor: .accentLavender,
                 location: "Conference Room B"
             ),
             NucleEvent(
                 title: "Design Sync",
                 startDate: calendar.date(bySettingHour: 14, minute: 0, second: 0, of: today) ?? today,
                 endDate: calendar.date(bySettingHour: 14, minute: 45, second: 0, of: today) ?? today,
-                calendarColor: "7c5cf0"
+                calendarColor: .accentLight
             ),
             NucleEvent(
                 title: "1:1 with Manager",
                 startDate: calendar.date(bySettingHour: 16, minute: 30, second: 0, of: today) ?? today,
                 endDate: calendar.date(bySettingHour: 17, minute: 0, second: 0, of: today) ?? today,
-                calendarColor: "ff6b6b"
+                calendarColor: .custom("ff6b6b")
             )
         ]
     }
 
+    /// Returns events over the next `days` days, starting from today.
+    /// Passing `days <= 0` returns an empty array.
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
+        guard days > 0 else { return [] }
         var events: [NucleEvent] = try await fetchTodayEvents()
         for dayOffset in 1..<days {
             guard let futureDay = calendar.date(byAdding: .day, value: dayOffset, to: Date()) else { continue }
@@ -87,7 +106,7 @@ class MockCalendarService: CalendarServiceProtocol {
                     title: "Sprint Planning",
                     startDate: calendar.date(bySettingHour: 10, minute: 0, second: 0, of: date) ?? date,
                     endDate: calendar.date(bySettingHour: 11, minute: 30, second: 0, of: date) ?? date,
-                    calendarColor: "5b3fd4"
+                    calendarColor: .accentPrimary
                 )
             ]
         case 1:
@@ -96,7 +115,7 @@ class MockCalendarService: CalendarServiceProtocol {
                     title: "Engineering All-Hands",
                     startDate: calendar.date(bySettingHour: 15, minute: 0, second: 0, of: date) ?? date,
                     endDate: calendar.date(bySettingHour: 16, minute: 0, second: 0, of: date) ?? date,
-                    calendarColor: "c4b5fd",
+                    calendarColor: .accentLavender,
                     location: "Main Auditorium"
                 )
             ]
@@ -106,7 +125,7 @@ class MockCalendarService: CalendarServiceProtocol {
                     title: "Focus Block",
                     startDate: calendar.date(bySettingHour: 9, minute: 0, second: 0, of: date) ?? date,
                     endDate: calendar.date(bySettingHour: 12, minute: 0, second: 0, of: date) ?? date,
-                    calendarColor: "7c5cf0"
+                    calendarColor: .accentLight
                 )
             ]
         }

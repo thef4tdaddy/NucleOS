@@ -16,6 +16,19 @@ protocol RemindersServiceProtocol {
     func deleteTask(_ task: NucleTask) async throws
 }
 
+// MARK: - Errors
+
+enum RemindersServiceError: LocalizedError {
+    case unimplemented
+
+    var errorDescription: String? {
+        switch self {
+        case .unimplemented:
+            return "RemindersService is not implemented yet. EventKit integration is still pending."
+        }
+    }
+}
+
 // MARK: - Real Implementation
 
 /// Concrete implementation that will integrate with EventKit Reminders.
@@ -23,26 +36,30 @@ class RemindersService: RemindersServiceProtocol {
 
     func fetchTasks() async throws -> [NucleTask] {
         // TODO: Request EventKit authorization and fetch reminders
-        return []
+        throw RemindersServiceError.unimplemented
     }
 
     func addTask(_ task: NucleTask) async throws {
         // TODO: Create EKReminder and save to default Reminders list
+        throw RemindersServiceError.unimplemented
     }
 
     func completeTask(_ task: NucleTask) async throws {
         // TODO: Mark corresponding EKReminder as completed
+        throw RemindersServiceError.unimplemented
     }
 
     func deleteTask(_ task: NucleTask) async throws {
         // TODO: Remove EKReminder from the store
+        throw RemindersServiceError.unimplemented
     }
 }
 
 // MARK: - Mock Implementation
 
 /// Mock implementation with realistic hardcoded data for SwiftUI previews and testing.
-class MockRemindersService: RemindersServiceProtocol {
+/// Declared as an `actor` so concurrent async calls cannot introduce data races on `tasks`.
+actor MockRemindersService: RemindersServiceProtocol {
 
     private var tasks: [NucleTask] = [
         NucleTask(

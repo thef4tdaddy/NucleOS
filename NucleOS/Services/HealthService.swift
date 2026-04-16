@@ -16,6 +16,19 @@ protocol HealthServiceProtocol {
     func fetchCalories() async throws -> Double
 }
 
+// MARK: - Errors
+
+enum HealthServiceError: LocalizedError {
+    case notImplemented
+
+    var errorDescription: String? {
+        switch self {
+        case .notImplemented:
+            return "HealthService is not implemented yet. HealthKit integration is still pending."
+        }
+    }
+}
+
 // MARK: - Real Implementation
 
 /// Concrete implementation that will integrate with HealthKit.
@@ -23,22 +36,22 @@ class HealthService: HealthServiceProtocol {
 
     func fetchSteps() async throws -> Int {
         // TODO: Request HealthKit authorization and query HKQuantityType.stepCount
-        return 0
+        throw HealthServiceError.notImplemented
     }
 
     func fetchHeartRate() async throws -> Double {
         // TODO: Query most recent HKQuantityType.heartRate sample
-        return 0
+        throw HealthServiceError.notImplemented
     }
 
     func fetchSleep() async throws -> TimeInterval {
         // TODO: Query HKCategoryType.sleepAnalysis for last night's sleep duration
-        return 0
+        throw HealthServiceError.notImplemented
     }
 
     func fetchCalories() async throws -> Double {
         // TODO: Query HKQuantityType.activeEnergyBurned for today
-        return 0
+        throw HealthServiceError.notImplemented
     }
 }
 
