@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project NucleOS.xcodeproj \
+            -scheme NucleOS \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            build \
+            CODE_SIGNING_ALLOWED=NO
+
+  swiftlint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict
