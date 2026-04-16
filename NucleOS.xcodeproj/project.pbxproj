@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		0D4E4E4D2F9123CA0069B310 /* NucleOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = NucleOS.app; path = /Users/f4tdaddy/Git/NucleOS/build/Debug/NucleOS.app; sourceTree = "<absolute>"; };
+		0D4E4E902F9180730069B310 /* NucleOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NucleOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				0D4E4E4F2F9123CA0069B310 /* NucleOS */,
+				0D4E4E902F9180730069B310 /* NucleOS.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,7 +59,7 @@
 			packageProductDependencies = (
 			);
 			productName = NucleOS;
-			productReference = 0D4E4E4D2F9123CA0069B310 /* NucleOS.app */;
+			productReference = 0D4E4E902F9180730069B310 /* NucleOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -247,11 +248,11 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "NucleOS uses Calendar to display and manage your events.";
-				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "NucleOS uses Calendar to display your events on the dashboard.";
-				"INFOPLIST_KEY_NSHealthShareUsageDescription" = "NucleOS reads your health data to display on your personal dashboard.";
-				"INFOPLIST_KEY_NSHealthUpdateUsageDescription" = "NucleOS may update health records on your behalf.";
-				"INFOPLIST_KEY_NSRemindersUsageDescription" = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NucleOS uses Calendar to display and manage your events.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "NucleOS uses Calendar to display your events on the dashboard.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -298,11 +299,11 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription" = "NucleOS uses Calendar to display and manage your events.";
-				"INFOPLIST_KEY_NSCalendarsUsageDescription" = "NucleOS uses Calendar to display your events on the dashboard.";
-				"INFOPLIST_KEY_NSHealthShareUsageDescription" = "NucleOS reads your health data to display on your personal dashboard.";
-				"INFOPLIST_KEY_NSHealthUpdateUsageDescription" = "NucleOS may update health records on your behalf.";
-				"INFOPLIST_KEY_NSRemindersUsageDescription" = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NucleOS uses Calendar to display and manage your events.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "NucleOS uses Calendar to display your events on the dashboard.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

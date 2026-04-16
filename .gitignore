@@ -68,3 +68,8 @@ DerivedData/
 *.moved-aside
 *.pbxuser
 *.xcuserstate
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/swiftpm/
