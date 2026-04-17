@@ -39,7 +39,7 @@ enum CalendarServiceError: LocalizedError {
 /// Concrete implementation that integrates with EventKit Calendar.
 @MainActor
 class CalendarService: CalendarServiceProtocol {
-    private let eventStore = EKEventStore()
+    private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
 
     func fetchTodayEvents() async throws -> [NucleEvent] {
