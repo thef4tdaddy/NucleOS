@@ -31,6 +31,7 @@ jobs:
 
       - name: Build
         id: build
+        shell: bash
         run: |
           set +e
           xcodebuild \
@@ -43,14 +44,15 @@ jobs:
           BUILD_EXIT=${PIPESTATUS[0]}
           set -e
 
-          if [ $BUILD_EXIT -eq 0 ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
+          if [ "$BUILD_EXIT" -eq 0 ]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+            echo "errors=" >> "$GITHUB_OUTPUT"
           else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            ERRORS=$(grep "error:" build.log | head -20 | sed 's/"/\\"/g')
-            echo "errors<<EOF" >> $GITHUB_OUTPUT
-            echo "$ERRORS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            echo "status=failure" >> "$GITHUB_OUTPUT"
+            ERRORS=$(grep -E "error:|fatal error:" build.log | head -20 | sed 's/"/\\"/g')
+            echo "errors<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$ERRORS" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload build log
