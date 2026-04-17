@@ -299,16 +299,16 @@ class HealthService: HealthServiceProtocol {
 
     /// Fetches all four metrics concurrently and returns a single `HealthSnapshot`.
     func fetchSnapshot() async throws -> HealthSnapshot {
-        async let steps    = fetchSteps()
-        async let hr       = fetchHeartRate()
-        async let sleep    = fetchSleep()
+        async let steps = fetchSteps()
+        async let hr = fetchHeartRate()
+        async let sleep = fetchSleep()
         async let calories = fetchCalories()
 
         return HealthSnapshot(
-            steps: try await steps,
-            heartRate: try await hr,
-            sleepDuration: try await sleep,
-            activeCalories: try await calories
+            steps: (try? await steps) ?? 0,
+            heartRate: (try? await hr) ?? 0,
+            sleepDuration: (try? await sleep) ?? 0,
+            activeCalories: (try? await calories) ?? 0
         )
     }
 }
