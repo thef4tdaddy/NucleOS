@@ -63,9 +63,9 @@ struct CalendarPanelView: View {
                         .stroke(Color.border, lineWidth: 1)
                 )
         )
-        .task(priority: .userInitiated, operation: {
+        .task(priority: .userInitiated) {
             await loadEvents()
-        })
+        }
     }
 
     private func loadEvents() async {
@@ -76,7 +76,7 @@ struct CalendarPanelView: View {
             events = try await calendarService.fetchTodayEvents()
         } catch CalendarServiceError.permissionDenied {
             // Fall back to mock data
-            events = try? await MockCalendarService().fetchTodayEvents() ?? []
+            events = (try? await MockCalendarService().fetchTodayEvents()) ?? []
         } catch {
             self.error = error.localizedDescription
         }

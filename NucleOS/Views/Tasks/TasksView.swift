@@ -107,9 +107,9 @@ struct TasksView: View {
             }
         }
         .background(Color.backgroundPrimary)
-        .task(priority: .userInitiated, operation: {
+        .task(priority: .userInitiated) {
             await loadTasks()
-        })
+        }
     }
 
     private var incompleteTasks: [NucleTask] {
@@ -128,7 +128,7 @@ struct TasksView: View {
             tasks = try await remindersService.fetchTasks()
         } catch RemindersServiceError.permissionDenied {
             // Fall back to mock data
-            tasks = try? await MockRemindersService().fetchTasks() ?? []
+            tasks = (try? await MockRemindersService().fetchTasks()) ?? []
         } catch {
             self.error = error.localizedDescription
         }

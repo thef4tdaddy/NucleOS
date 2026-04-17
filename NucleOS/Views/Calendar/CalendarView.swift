@@ -102,9 +102,9 @@ struct CalendarView: View {
             }
         }
         .background(Color.backgroundPrimary)
-        .task(priority: .userInitiated, operation: {
+        .task(priority: .userInitiated) {
             await loadEvents()
-        })
+        }
     }
 
     private var groupedEventsByDay: [(key: Date, value: [NucleEvent])] {
@@ -128,9 +128,9 @@ struct CalendarView: View {
         } catch CalendarServiceError.permissionDenied {
             // Fall back to mock data
             if selectedDays == 1 {
-                events = try? await MockCalendarService().fetchTodayEvents() ?? []
+                events = (try? await MockCalendarService().fetchTodayEvents()) ?? []
             } else {
-                events = try? await MockCalendarService().fetchUpcomingEvents(days: selectedDays) ?? []
+                events = (try? await MockCalendarService().fetchUpcomingEvents(days: selectedDays)) ?? []
             }
         } catch {
             self.error = error.localizedDescription

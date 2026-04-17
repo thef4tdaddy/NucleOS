@@ -39,16 +39,15 @@ struct StatsRowView: View {
                 subtitle: "Coming soon"
             )
         }
-        .task(priority: .userInitiated, operation: {
+        .task(priority: .userInitiated) {
             await loadStats()
-        })
+        }
     }
 
     private func loadStats() async {
         // Load tasks
         do {
             let tasks = try await remindersService.fetchTasks()
-            let today = Calendar.current.startOfDay(for: Date())
 
             tasksToday = tasks.filter { task in
                 guard let dueDate = task.dueDate else { return false }

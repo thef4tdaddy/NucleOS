@@ -63,9 +63,9 @@ struct TasksPanelView: View {
                         .stroke(Color.border, lineWidth: 1)
                 )
         )
-        .task(priority: .userInitiated, operation: {
+        .task(priority: .userInitiated) {
             await loadTasks()
-        })
+        }
     }
 
     private func loadTasks() async {
@@ -77,7 +77,7 @@ struct TasksPanelView: View {
             tasks = allTasks.filter { !$0.isCompleted }
         } catch RemindersServiceError.permissionDenied {
             // Fall back to mock data
-            tasks = try? await MockRemindersService().fetchTasks() ?? []
+            tasks = (try? await MockRemindersService().fetchTasks()) ?? []
         } catch {
             self.error = error.localizedDescription
         }
