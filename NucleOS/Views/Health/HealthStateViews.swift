@@ -30,6 +30,8 @@ struct HealthEmptyStateView: View {
 
 /// Shown when the user has denied HealthKit access.
 struct HealthPermissionDeniedView: View {
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         HealthStateContainer {
             HealthStateIcon(
@@ -58,9 +60,15 @@ struct HealthPermissionDeniedView: View {
     }
 
     private func openHealthPrivacySettings() {
+#if os(macOS)
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Health") {
-            NSWorkspace.shared.open(url)
+            openURL(url)
         }
+#else
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
+        }
+#endif
     }
 }
 
@@ -86,11 +94,15 @@ struct HealthUnavailableView: View {
 // MARK: - Shared Subviews
 
 private struct HealthStateContainer<Content: View>: View {
-    @ViewBuilder let content: Content
+    let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
 
     var body: some View {
         VStack(spacing: 20) {
-            content
+            content()
         }
         .frame(maxWidth: 380)
         .padding(40)

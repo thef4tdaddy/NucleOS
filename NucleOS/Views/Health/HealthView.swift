@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HealthView: View {
-    @State private var permissionState: HealthPermissionState = .notDetermined
+    @StateObject private var viewModel = HealthViewModel()
 
     var body: some View {
         ScrollView {
@@ -38,16 +38,18 @@ struct HealthView: View {
             }
         }
         .background(Color.backgroundPrimary)
-        .onAppear(perform: evaluatePermissionState)
+        .onAppear { viewModel.evaluatePermissionState() }
     }
 
     // MARK: - Content
 
     @ViewBuilder
     private var contentView: some View {
-        switch permissionState {
+        switch viewModel.permissionState {
         case .notDetermined:
-            HealthRequestPermissionView(onRequest: evaluatePermissionState)
+            HealthRequestPermissionView {
+                Task { await viewModel.requestAuthorization() }
+            }
         case .unavailable:
             HealthUnavailableView()
         case .denied:
@@ -57,16 +59,6 @@ struct HealthView: View {
         case .authorized:
             HealthStripView()
         }
-    }
-
-    // MARK: - Permission Evaluation
-
-    private func evaluatePermissionState() {
-        // HealthKit is not available on macOS without an Apple Silicon Mac
-        // running macOS 13+ with the appropriate entitlement. We surface the
-        // unavailable state here; the real check will be added when HealthKit
-        // is fully integrated.
-        permissionState = .unavailable
     }
 }
 
