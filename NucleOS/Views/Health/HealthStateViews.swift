@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 // MARK: - Empty State
 
 /// Shown when HealthKit is authorized but no data is available yet.
@@ -64,7 +68,7 @@ struct HealthPermissionDeniedView: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Health") {
             openURL(url)
         }
-#else
+#elseif canImport(UIKit)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             openURL(url)
         }

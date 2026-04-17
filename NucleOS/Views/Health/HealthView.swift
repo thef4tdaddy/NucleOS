@@ -9,7 +9,6 @@ import SwiftUI
 
 struct HealthView: View {
     @StateObject private var viewModel = HealthViewModel()
-    private let snapshot = MockData.healthSnapshot
 
     var body: some View {
         ScrollView {
@@ -39,7 +38,9 @@ struct HealthView: View {
             }
         }
         .background(Color.backgroundPrimary)
-        .onAppear { viewModel.evaluatePermissionState() }
+        .task {
+            await viewModel.evaluatePermissionState()
+        }
     }
 
     // MARK: - Content
@@ -58,10 +59,12 @@ struct HealthView: View {
         case .empty:
             HealthEmptyStateView()
         case .authorized:
+            // Use live snapshot; fall back to mock data while the first fetch is in-flight.
+            let displaySnapshot = viewModel.snapshot ?? MockData.healthSnapshot
             VStack(spacing: 24) {
-                HealthStripView()
-                HealthDetailGridView(snapshot: snapshot)
-                HealthActivityView(snapshot: snapshot)
+                HealthStripView(snapshot: displaySnapshot)
+                HealthDetailGridView(snapshot: displaySnapshot)
+                HealthActivityView(snapshot: displaySnapshot)
             }
         }
     }
@@ -141,8 +144,7 @@ private struct HealthDetailGridView: View {
                 goal: snapshot.stepGoal.formatted(),
                 unit: "steps",
                 progress: snapshot.stepsProgress,
-                // TODO: Compute delta from HealthKit history once wired up
-                trend: "+12% from yesterday",
+                trend: "\(Int(snapshot.stepsProgress * 100))% of goal",
                 color: .accentLavender
             )
 
@@ -175,8 +177,7 @@ private struct HealthDetailGridView: View {
                 goal: Int(snapshot.calorieGoal).formatted(),
                 unit: "kcal",
                 progress: snapshot.caloriesProgress,
-                // TODO: Compute delta from HealthKit history once wired up
-                trend: "+5% from yesterday",
+                trend: "\(Int(snapshot.caloriesProgress * 100))% of goal",
                 color: .accentWarm
             )
         }

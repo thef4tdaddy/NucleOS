@@ -2,7 +2,8 @@
 //  HealthActivityView.swift
 //  NucleOS
 //
-//  Weekly steps bar chart and sleep breakdown card for the Health section
+//  Weekly steps bar chart and sleep breakdown card for the Health section.
+//  Today's step count and sleep totals are driven by the live HealthSnapshot.
 //
 
 import SwiftUI
@@ -14,7 +15,7 @@ struct HealthActivityView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            HealthWeeklyStepsCard()
+            HealthWeeklyStepsCard(todaySteps: snapshot.steps, stepGoal: snapshot.stepGoal)
             HealthSleepCard(snapshot: snapshot)
         }
     }
@@ -23,23 +24,41 @@ struct HealthActivityView: View {
 // MARK: - Weekly Steps
 
 struct HealthWeeklyStepsCard: View {
+    let todaySteps: Int
+    let stepGoal: Int
+
     private struct DayEntry {
         let day: String
         let steps: Int
         let isToday: Bool
     }
 
-    private let stepGoal = 10_000
-    // TODO: Replace with real HealthKit weekly step counts once wired up
-    private let weeklyData: [DayEntry] = [
-        DayEntry(day: "Mon", steps: 9_200, isToday: false),
-        DayEntry(day: "Tue", steps: 7_800, isToday: false),
-        DayEntry(day: "Wed", steps: 11_340, isToday: false),
-        DayEntry(day: "Thu", steps: 8_234, isToday: true),
-        DayEntry(day: "Fri", steps: 0, isToday: false),
-        DayEntry(day: "Sat", steps: 0, isToday: false),
-        DayEntry(day: "Sun", steps: 0, isToday: false),
-    ]
+    /// Weekly step data with today's real count from the snapshot.
+    /// Today's bar uses the live `todaySteps` value from the snapshot.
+    /// Past days show 0 because a per-day history query is outside the scope of
+    /// the current `HealthSnapshot` model (which only captures today's totals).
+    /// Future days show 0 as no data exists yet.
+    private var weeklyData: [DayEntry] {
+        let calendar = Calendar.current
+        let today = calendar.component(.weekday, from: Date())
+        // weekday: 1=Sun, 2=Mon, ..., 7=Sat. Map to Mon-Sun display.
+        let orderedDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        // weekday index for Monday = 2, so offset = today's weekday - 2 (mod 7)
+        let todayIndex = (today + 5) % 7 // 0=Mon, 1=Tue, ..., 6=Sun
+
+        return orderedDays.enumerated().map { index, day in
+            if index == todayIndex {
+                return DayEntry(day: day, steps: todaySteps, isToday: true)
+            } else if index < todayIndex {
+                // Past days show 0 — per-day history requires a separate HKStatisticsCollectionQuery
+                // beyond the scope of the current HealthSnapshot model (today's totals only).
+                return DayEntry(day: day, steps: 0, isToday: false)
+            } else {
+                // Future days have no data yet
+                return DayEntry(day: day, steps: 0, isToday: false)
+            }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -126,7 +145,10 @@ private struct SleepStage {
 struct HealthSleepCard: View {
     let snapshot: HealthSnapshot
 
-    // TODO: Derive from HealthSnapshot sleep analysis once HealthKit is wired up
+    /// Placeholder sleep stage breakdown.
+    /// Fractions are normalized to reflect typical proportions.
+    /// A detailed sleep stage query (HKCategoryValueSleepAnalysis) would be required
+    /// to replace these with real per-stage values.
     private let stages: [SleepStage] = [
         SleepStage(label: "Deep",  duration: "1h 45m", color: .accentPrimary,  fraction: 0.25),
         SleepStage(label: "Light", duration: "3h 12m", color: .accentLight,    fraction: 0.46),
