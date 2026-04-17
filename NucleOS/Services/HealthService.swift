@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 // MARK: - Protocol
 
@@ -20,6 +19,7 @@ protocol HealthServiceProtocol {
 // MARK: - Errors
 
 enum HealthServiceError: LocalizedError {
+    /// HealthKit access has not been authorized — call `requestAuthorization()` first.
     case unauthorized
     case dataNotAvailable
     case queryFailed(String)
@@ -38,6 +38,9 @@ enum HealthServiceError: LocalizedError {
 
 // MARK: - Real Implementation
 
+#if canImport(HealthKit)
+import HealthKit
+
 /// Concrete implementation that integrates with HealthKit.
 /// Depends on `HealthKitAuthorizationService` to verify access before querying.
 class HealthService: HealthServiceProtocol {
@@ -55,16 +58,15 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Private Helpers
 
+    /// Guards every fetch method — only `.authorized` may proceed.
+    /// Throws `HealthServiceError.unauthorized` for any non-authorized state so callers
+    /// deal with a single, consistent error type from this service.
     private func requireAuthorization() throws {
         switch authService.authorizationStatus {
         case .authorized:
             break
-        case .notDetermined:
-            throw HealthKitAuthorizationError.notDetermined
-        case .denied:
-            throw HealthKitAuthorizationError.authorizationDenied
-        case .unavailable:
-            throw HealthKitAuthorizationError.healthDataUnavailable
+        case .notDetermined, .denied, .unavailable:
+            throw HealthServiceError.unauthorized
         }
     }
 
@@ -139,8 +141,10 @@ class HealthService: HealthServiceProtocol {
             throw HealthServiceError.dataNotAvailable
         }
 
-        // Look back 24 hours for the most recent sleep session.
-        let yesterday = Date(timeIntervalSinceNow: -86_400)
+        // Look back one calendar day — Calendar arithmetic is DST-safe unlike fixed seconds.
+        guard let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) else {
+            throw HealthServiceError.dataNotAvailable
+        }
         let predicate = HKQuery.predicateForSamples(withStart: yesterday, end: Date(), options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
@@ -159,8 +163,11 @@ class HealthService: HealthServiceProtocol {
                     continuation.resume(throwing: HealthServiceError.dataNotAvailable)
                     return
                 }
-                // Sum all asleep stages; skip any samples with unrecognised category values.
-                let asleepValues: Set<HKCategoryValueSleepAnalysis> = [.asleepCore, .asleepDeep, .asleepREM]
+                // Sum all asleep stages, including unspecified samples from sources without
+                // sleep staging (common on older devices/OS versions); skip unknown values.
+                let asleepValues: Set<HKCategoryValueSleepAnalysis> = [
+                    .asleepUnspecified, .asleepCore, .asleepDeep, .asleepREM
+                ]
                 let totalSleep = samples
                     .compactMap { $0 as? HKCategorySample }
                     .filter { sample in
@@ -200,6 +207,7 @@ class HealthService: HealthServiceProtocol {
         }
     }
 }
+#endif
 
 // MARK: - Mock Implementation
 

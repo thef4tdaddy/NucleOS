@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 // MARK: - Authorization Status
 
@@ -21,21 +20,6 @@ enum HealthKitAuthorizationStatus: Equatable, Sendable {
     case denied
     /// HealthKit is not available on this device (e.g., iPad without Health app).
     case unavailable
-}
-
-// MARK: - Protocol
-
-protocol HealthKitAuthorizationServiceProtocol: Sendable {
-    /// Returns `true` when HealthKit is available on this device.
-    var isHealthDataAvailable: Bool { get }
-
-    /// The current authorization status, derived from the last `requestAuthorization()` call.
-    var authorizationStatus: HealthKitAuthorizationStatus { get }
-
-    /// Requests read authorization for the dashboard data types.
-    /// - Returns: The resulting `HealthKitAuthorizationStatus` after the prompt.
-    /// - Throws: `HealthKitAuthorizationError` if access is unavailable or denied.
-    func requestAuthorization() async throws -> HealthKitAuthorizationStatus
 }
 
 // MARK: - Errors
@@ -57,14 +41,34 @@ enum HealthKitAuthorizationError: LocalizedError {
     }
 }
 
+// MARK: - Protocol
+
+protocol HealthKitAuthorizationServiceProtocol: Sendable {
+    /// Returns `true` when HealthKit is available on this device.
+    var isHealthDataAvailable: Bool { get }
+
+    /// The current authorization status, derived from the last `requestAuthorization()` call.
+    var authorizationStatus: HealthKitAuthorizationStatus { get }
+
+    /// Requests read authorization for the dashboard data types.
+    /// - Returns: The resulting `HealthKitAuthorizationStatus` after the prompt.
+    /// - Throws: `HealthKitAuthorizationError` if access is unavailable or denied.
+    func requestAuthorization() async throws -> HealthKitAuthorizationStatus
+}
+
 // MARK: - Real Implementation
+
+#if canImport(HealthKit)
+import HealthKit
 
 /// Concrete implementation that wraps `HKHealthStore` to manage authorization for the
 /// four dashboard metrics: steps, heart rate, sleep, and active calories.
 ///
 /// HealthKit deliberately does not expose per-type read authorization status to protect
-/// user privacy. Authorization state is therefore tracked internally based on whether
-/// `requestAuthorization()` has been called and succeeded.
+/// user privacy. Post-request status is verified via `statusForAuthorizationRequest(toShare:read:)`:
+/// - `.unnecessary` → the system has processed the prompt; treat as authorized (HealthKit hides read denials).
+/// - `.shouldRequest` → still pending; status remains `.notDetermined`.
+/// - `.unknown` → indeterminate result; throws `.authorizationDenied` to prevent silent failures.
 final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthorizationServiceProtocol {
 
     private let store: HKHealthStore
@@ -108,18 +112,35 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
 
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
         guard isHealthDataAvailable else {
-            setStatus(.unavailable)
-            return .unavailable
+            throw HealthKitAuthorizationError.healthDataUnavailable
         }
 
         do {
             try await store.requestAuthorization(toShare: [], read: Self.readTypes)
-            setStatus(.authorized)
-            return .authorized
         } catch {
             // HealthKit throws if the system or an MDM policy prevented the authorization prompt.
             setStatus(.denied)
             throw HealthKitAuthorizationError.authorizationDenied
+        }
+
+        // Verify the post-request status. HealthKit hides read-access denials for privacy,
+        // so `.unnecessary` means the system processed the prompt — treat as authorized.
+        let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
+        switch requestStatus {
+        case .unnecessary:
+            // All requested types have been shown to the user; queries may proceed.
+            setStatus(.authorized)
+            return .authorized
+        case .shouldRequest:
+            // Prompt was presented but some types still appear pending; stay notDetermined.
+            setStatus(.notDetermined)
+            return .notDetermined
+        case .unknown:
+            setStatus(.denied)
+            throw HealthKitAuthorizationError.authorizationDenied
+        @unknown default:
+            setStatus(.notDetermined)
+            return .notDetermined
         }
     }
 
@@ -131,6 +152,7 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
         _authorizationStatus = status
     }
 }
+#endif
 
 // MARK: - Mock Implementation
 
