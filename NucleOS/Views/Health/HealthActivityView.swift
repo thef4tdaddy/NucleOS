@@ -34,8 +34,10 @@ struct HealthWeeklyStepsCard: View {
     }
 
     /// Weekly step data with today's real count from the snapshot.
-    /// Days after today show 0 (future); past days show placeholder data.
-    /// A full history query would be needed to populate previous days with real data.
+    /// Today's bar uses the live `todaySteps` value from the snapshot.
+    /// Past days show 0 because a per-day history query is outside the scope of
+    /// the current `HealthSnapshot` model (which only captures today's totals).
+    /// Future days show 0 as no data exists yet.
     private var weeklyData: [DayEntry] {
         let calendar = Calendar.current
         let today = calendar.component(.weekday, from: Date())
@@ -48,7 +50,8 @@ struct HealthWeeklyStepsCard: View {
             if index == todayIndex {
                 return DayEntry(day: day, steps: todaySteps, isToday: true)
             } else if index < todayIndex {
-                // Placeholder for past days — shows something non-zero for visual context
+                // Past days show 0 — per-day history requires a separate HKStatisticsCollectionQuery
+                // beyond the scope of the current HealthSnapshot model (today's totals only).
                 return DayEntry(day: day, steps: 0, isToday: false)
             } else {
                 // Future days have no data yet

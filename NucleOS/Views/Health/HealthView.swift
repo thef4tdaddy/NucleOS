@@ -63,11 +63,11 @@ struct HealthView: View {
             HealthEmptyStateView()
         case .authorized:
             // Use live snapshot; fall back to mock data while the first fetch is in-flight.
-            let activeSnapshot = viewModel.snapshot ?? MockData.healthSnapshot
+            let displaySnapshot = viewModel.snapshot ?? MockData.healthSnapshot
             VStack(spacing: 24) {
-                HealthStripView(snapshot: activeSnapshot)
-                HealthDetailGridView(snapshot: activeSnapshot)
-                HealthActivityView(snapshot: activeSnapshot)
+                HealthStripView(snapshot: displaySnapshot)
+                HealthDetailGridView(snapshot: displaySnapshot)
+                HealthActivityView(snapshot: displaySnapshot)
             }
         }
     }
