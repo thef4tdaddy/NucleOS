@@ -47,10 +47,15 @@ protocol HealthKitAuthorizationServiceProtocol: Sendable {
     /// Returns `true` when HealthKit is available on this device.
     var isHealthDataAvailable: Bool { get }
 
-    /// The current authorization status, derived from the last `requestAuthorization()` call.
-    var authorizationStatus: HealthKitAuthorizationStatus { get }
+    /// Non-prompting check: uses `statusForAuthorizationRequest` to determine if the
+    /// authorization prompt has already been shown and acted upon by the user.
+    /// Returns `.authorized` when the user has previously decided (HealthKit treats both
+    /// grant and deny as `.unnecessary` to protect read-access privacy).
+    /// Returns `.notDetermined` when the prompt has not been shown yet.
+    func checkAuthorizationStatus() async -> HealthKitAuthorizationStatus
 
     /// Requests read authorization for the dashboard data types.
+    /// Shows the system authorization prompt on first call; subsequent calls are no-ops.
     /// - Returns: The resulting `HealthKitAuthorizationStatus` after the prompt.
     /// - Throws: `HealthKitAuthorizationError` if access is unavailable or denied.
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus
@@ -72,8 +77,6 @@ import HealthKit
 final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthorizationServiceProtocol {
 
     private let store: HKHealthStore
-    private let lock = NSLock()
-    private var _authorizationStatus: HealthKitAuthorizationStatus = .notDetermined
 
     /// Data types the app needs read access to.
     private static let readTypes: Set<HKObjectType> = {
@@ -103,11 +106,24 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
         HKHealthStore.isHealthDataAvailable()
     }
 
-    var authorizationStatus: HealthKitAuthorizationStatus {
+    func checkAuthorizationStatus() async -> HealthKitAuthorizationStatus {
         guard isHealthDataAvailable else { return .unavailable }
-        lock.lock()
-        defer { lock.unlock() }
-        return _authorizationStatus
+        guard let status = try? await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes) else {
+            return .notDetermined
+        }
+        switch status {
+        case .unnecessary:
+            // The system has previously shown the prompt; treat as authorized.
+            // HealthKit hides read-access denials to protect user privacy — a failed
+            // query will surface `.unauthorized` at fetch time if the user denied.
+            return .authorized
+        case .shouldRequest:
+            return .notDetermined
+        case .unknown:
+            return .notDetermined
+        @unknown default:
+            return .notDetermined
+        }
     }
 
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
@@ -119,7 +135,6 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
             try await store.requestAuthorization(toShare: [], read: Self.readTypes)
         } catch {
             // HealthKit throws if the system or an MDM policy prevented the authorization prompt.
-            setStatus(.denied)
             throw HealthKitAuthorizationError.authorizationDenied
         }
 
@@ -128,28 +143,14 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
         let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
         switch requestStatus {
         case .unnecessary:
-            // All requested types have been shown to the user; queries may proceed.
-            setStatus(.authorized)
             return .authorized
         case .shouldRequest:
-            // Prompt was presented but some types still appear pending; stay notDetermined.
-            setStatus(.notDetermined)
             return .notDetermined
         case .unknown:
-            setStatus(.denied)
             throw HealthKitAuthorizationError.authorizationDenied
         @unknown default:
-            setStatus(.notDetermined)
             return .notDetermined
         }
-    }
-
-    // MARK: Private
-
-    private func setStatus(_ status: HealthKitAuthorizationStatus) {
-        lock.lock()
-        defer { lock.unlock() }
-        _authorizationStatus = status
     }
 }
 #endif
@@ -163,21 +164,25 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
 final class MockHealthKitAuthorizationService: HealthKitAuthorizationServiceProtocol, @unchecked Sendable {
 
     var isHealthDataAvailable: Bool
-    var authorizationStatus: HealthKitAuthorizationStatus
+    var checkStatusResult: HealthKitAuthorizationStatus
     var requestAuthorizationResult: HealthKitAuthorizationStatus
 
     init(
         isHealthDataAvailable: Bool = true,
-        authorizationStatus: HealthKitAuthorizationStatus = .authorized,
+        checkStatusResult: HealthKitAuthorizationStatus = .authorized,
         requestAuthorizationResult: HealthKitAuthorizationStatus = .authorized
     ) {
         self.isHealthDataAvailable = isHealthDataAvailable
-        self.authorizationStatus = authorizationStatus
+        self.checkStatusResult = checkStatusResult
         self.requestAuthorizationResult = requestAuthorizationResult
     }
 
+    func checkAuthorizationStatus() async -> HealthKitAuthorizationStatus {
+        return checkStatusResult
+    }
+
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
-        authorizationStatus = requestAuthorizationResult
+        checkStatusResult = requestAuthorizationResult
         return requestAuthorizationResult
     }
 }

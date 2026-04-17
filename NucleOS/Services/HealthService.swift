@@ -304,11 +304,11 @@ class HealthService: HealthServiceProtocol {
         async let sleep    = fetchSleep()
         async let calories = fetchCalories()
 
-        return try await HealthSnapshot(
-            steps: steps,
-            heartRate: hr,
-            sleepDuration: sleep,
-            activeCalories: calories
+        return HealthSnapshot(
+            steps: try await steps,
+            heartRate: try await hr,
+            sleepDuration: try await sleep,
+            activeCalories: try await calories
         )
     }
 }

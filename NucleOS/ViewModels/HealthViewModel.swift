@@ -7,11 +7,6 @@
 //
 
 import Foundation
-import Combine
-
-#if canImport(HealthKit)
-import HealthKit
-#endif
 
 @MainActor
 final class HealthViewModel: ObservableObject {
@@ -21,79 +16,84 @@ final class HealthViewModel: ObservableObject {
     @Published private(set) var isLoading: Bool = false
 
     private let service: HealthServiceProtocol
+    private let authService: HealthKitAuthorizationServiceProtocol
 
-    init(service: HealthServiceProtocol = HealthService()) {
+    init(
+        service: HealthServiceProtocol = HealthService(),
+        authService: HealthKitAuthorizationServiceProtocol? = nil
+    ) {
         self.service = service
+        if let authService {
+            self.authService = authService
+        } else {
+            #if canImport(HealthKit)
+            self.authService = HealthKitAuthorizationService()
+            #else
+            self.authService = MockHealthKitAuthorizationService(
+                isHealthDataAvailable: false,
+                checkStatusResult: .unavailable,
+                requestAuthorizationResult: .unavailable
+            )
+            #endif
+        }
     }
-
-#if canImport(HealthKit)
-    /// Shared store instance — HealthKit best practice is one store per app.
-    private static let store = HKHealthStore()
-#endif
 
     // MARK: - Permission Evaluation
 
-    /// Evaluates the current HealthKit availability and authorization status,
-    /// then updates `permissionState` accordingly.
-    func evaluatePermissionState() {
-#if canImport(HealthKit)
-        guard HKHealthStore.isHealthDataAvailable() else {
+    /// Checks the current HealthKit authorization state via `statusForAuthorizationRequest`
+    /// (no system prompt is shown) and fetches data if already authorized.
+    func evaluatePermissionState() async {
+        guard authService.isHealthDataAvailable else {
             permissionState = .unavailable
             return
         }
 
-        let stepType = HKQuantityType(.stepCount)
-        let status = Self.store.authorizationStatus(for: stepType)
-
+        let status = await authService.checkAuthorizationStatus()
         switch status {
+        case .authorized:
+            permissionState = .authorized
+            await fetchData()
         case .notDetermined:
             permissionState = .notDetermined
-        case .sharingDenied:
+        case .denied:
             permissionState = .denied
-        case .sharingAuthorized:
-            permissionState = .authorized
-        @unknown default:
-            permissionState = .notDetermined
+            snapshot = nil
+        case .unavailable:
+            permissionState = .unavailable
         }
-#else
-        permissionState = .unavailable
-#endif
     }
 
     // MARK: - Authorization Request
 
-    /// Requests HealthKit authorization for the metrics NucleOS displays.
-    /// After the request completes, re-evaluates the permission state and fetches data.
+    /// Requests HealthKit authorization via the injected auth service.
+    /// On first launch this shows the system permission prompt; subsequent calls are
+    /// no-ops from the user's perspective. On success, fetches health data immediately.
     func requestAuthorization() async {
-#if canImport(HealthKit)
-        guard HKHealthStore.isHealthDataAvailable() else { return }
-
-        let readTypes: Set<HKObjectType> = [
-            HKQuantityType(.stepCount),
-            HKQuantityType(.heartRate),
-            HKQuantityType(.activeEnergyBurned),
-            HKCategoryType(.sleepAnalysis),
-        ]
-
         do {
-            try await Self.store.requestAuthorization(toShare: [], read: readTypes)
+            let status = try await authService.requestAuthorization()
+            switch status {
+            case .authorized:
+                permissionState = .authorized
+                await fetchData()
+            case .denied:
+                permissionState = .denied
+                snapshot = nil
+            case .notDetermined:
+                permissionState = .notDetermined
+            case .unavailable:
+                permissionState = .unavailable
+            }
         } catch {
-            print("HealthKit authorization error: \(error)")
+            permissionState = .denied
+            snapshot = nil
         }
-
-        evaluatePermissionState()
-
-        if permissionState == .authorized {
-            await fetchData()
-        }
-#endif
     }
 
     // MARK: - Data Fetching
 
     /// Fetches a fresh `HealthSnapshot` from the service and publishes it.
-    /// Transitions `permissionState` to `.empty` when authorized but no data is returned.
-    /// Must be called after authorization is confirmed.
+    /// Transitions `permissionState` to `.empty` or `.denied` on the matching errors and
+    /// clears any previously cached snapshot so stale data is not shown.
     func fetchData() async {
         isLoading = true
         defer { isLoading = false }
@@ -102,12 +102,13 @@ final class HealthViewModel: ObservableObject {
             let fetched = try await service.fetchSnapshot()
             snapshot = fetched
         } catch HealthServiceError.noData {
+            snapshot = nil
             permissionState = .empty
         } catch HealthServiceError.unauthorized {
+            snapshot = nil
             permissionState = .denied
         } catch {
-            // For unavailable or other transient errors, leave permissionState unchanged.
-            // The snapshot remains nil and the view falls back to mock data.
+            // Transient or unavailable error — leave permissionState and snapshot unchanged.
         }
     }
 }

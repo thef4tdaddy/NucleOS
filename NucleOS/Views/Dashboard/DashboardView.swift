@@ -53,10 +53,7 @@ struct DashboardView: View {
         })
         .background(Color.backgroundPrimary)
         .task {
-            healthViewModel.evaluatePermissionState()
-            if healthViewModel.permissionState == .authorized {
-                await healthViewModel.fetchData()
-            }
+            await healthViewModel.evaluatePermissionState()
         }
     }
 }

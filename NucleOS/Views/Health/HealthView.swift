@@ -39,10 +39,7 @@ struct HealthView: View {
         }
         .background(Color.backgroundPrimary)
         .task {
-            viewModel.evaluatePermissionState()
-            if viewModel.permissionState == .authorized {
-                await viewModel.fetchData()
-            }
+            await viewModel.evaluatePermissionState()
         }
     }
 
