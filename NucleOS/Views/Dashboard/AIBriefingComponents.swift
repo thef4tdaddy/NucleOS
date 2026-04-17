@@ -4,6 +4,20 @@
 //
 //  AI briefing panel and briefing bullet
 //
+//  HEALTH SUMMARY SURFACE
+//  ======================
+//  `AIBriefingPanelView` is the designated UI destination for AI-generated health
+//  summaries. When the `HealthSummaryPromptBuilder` + `LLMProvider` pipeline is
+//  implemented (milestone 0.4.0+), its one-sentence observation (e.g. "You're on
+//  track — 8,234 steps and 7h of sleep last night.") should be surfaced here as a
+//  `BriefingBullet`, alongside the existing calendar and tasks bullets.
+//
+//  Output framing rules that MUST be respected when health bullets are added:
+//  • Observations only — never advice. "You got 7h 23m of sleep" not "Sleep more."
+//  • Celebratory when a goal is met: "Steps goal hit today 🎉"
+//  • Neutral when not: "1,766 steps remaining to hit your goal"
+//  • No trend language that implies medical significance ("declining", "worrying").
+//
 
 import SwiftUI
 
