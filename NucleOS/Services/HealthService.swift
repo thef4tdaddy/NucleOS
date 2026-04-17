@@ -6,9 +6,6 @@
 //
 
 import Foundation
-#if canImport(HealthKit)
-import HealthKit
-#endif
 
 // MARK: - Permission State
 
@@ -75,6 +72,7 @@ enum HealthServiceError: LocalizedError {
 // MARK: - Real Implementation
 
 #if canImport(HealthKit)
+import HealthKit
 
 /// Concrete HealthKit-backed implementation.
 ///
@@ -314,7 +312,6 @@ class HealthService: HealthServiceProtocol {
         )
     }
 }
-#endif
 
 #else
 
