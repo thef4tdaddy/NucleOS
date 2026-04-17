@@ -25,10 +25,7 @@ struct HealthView: View {
                 HealthDetailGridView(snapshot: snapshot)
                     .padding(.horizontal, 32)
 
-                HealthWeeklyStepsCard()
-                    .padding(.horizontal, 32)
-
-                HealthSleepCard(snapshot: snapshot)
+                HealthActivityView(snapshot: snapshot)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 32)
             }
@@ -90,7 +87,7 @@ private struct HealthDetailGridView: View {
                 value: "\(Int(snapshot.heartRate))",
                 goal: "60–100",
                 unit: "bpm",
-                progress: min(snapshot.heartRate / 100, 1.0),
+                progress: max(0, min(snapshot.heartRate / 100, 1.0)),
                 trend: "Resting average",
                 color: .accentPrimary
             )
@@ -100,7 +97,7 @@ private struct HealthDetailGridView: View {
                 label: "Sleep",
                 value: snapshot.sleepFormatted,
                 goal: snapshot.sleepGoalFormatted,
-                unit: "duration",
+                unit: "",
                 progress: snapshot.sleepProgress,
                 trend: "Goal: \(snapshot.sleepGoalFormatted)",
                 color: .accentLight
@@ -143,9 +140,11 @@ struct HealthDetailCard: View {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.textPrimary)
 
-                    Text(unit)
-                        .font(.system(size: 13))
-                        .foregroundColor(.textMuted)
+                    if !unit.isEmpty {
+                        Text(unit)
+                            .font(.system(size: 13))
+                            .foregroundColor(.textMuted)
+                    }
                 }
 
                 Text("/ \(goal)")

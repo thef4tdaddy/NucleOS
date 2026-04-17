@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct HealthStripView: View {
-    var snapshot: HealthSnapshot = MockData.healthSnapshot
+    let snapshot: HealthSnapshot
+
+    init(snapshot: HealthSnapshot = MockData.healthSnapshot) {
+        self.snapshot = snapshot
+    }
 
     var body: some View {
         HStack(spacing: 16) {
@@ -26,7 +30,7 @@ struct HealthStripView: View {
                 label: "Heart Rate",
                 value: "\(Int(snapshot.heartRate))",
                 goal: "avg",
-                progress: min(snapshot.heartRate / 100, 1.0),
+                progress: max(0, min(snapshot.heartRate / 100, 1.0)),
                 color: .accentPrimary
             )
 

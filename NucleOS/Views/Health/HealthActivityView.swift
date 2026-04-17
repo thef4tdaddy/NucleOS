@@ -7,6 +7,19 @@
 
 import SwiftUI
 
+// MARK: - Activity View (weekly steps + sleep breakdown)
+
+struct HealthActivityView: View {
+    let snapshot: HealthSnapshot
+
+    var body: some View {
+        VStack(spacing: 24) {
+            HealthWeeklyStepsCard()
+            HealthSleepCard(snapshot: snapshot)
+        }
+    }
+}
+
 // MARK: - Weekly Steps
 
 struct HealthWeeklyStepsCard: View {
@@ -213,11 +226,8 @@ private struct SleepStageLegend: View {
 
 #Preview {
     ScrollView {
-        VStack(spacing: 24) {
-            HealthWeeklyStepsCard()
-            HealthSleepCard(snapshot: MockData.healthSnapshot)
-        }
-        .padding(32)
+        HealthActivityView(snapshot: MockData.healthSnapshot)
+            .padding(32)
     }
     .background(Color.backgroundPrimary)
 }
