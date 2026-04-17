@@ -111,7 +111,8 @@ class CalendarService: CalendarServiceProtocol {
     }
 
     private func cgColorToHex(_ cgColor: CGColor) -> String {
-        guard let components = cgColor.components, components.count >= 3 else {
+        let rgbColor = cgColor.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil) ?? cgColor
+        guard let components = rgbColor.components, components.count >= 3 else {
             return "5b3fd4" // Default to accentPrimary
         }
 
