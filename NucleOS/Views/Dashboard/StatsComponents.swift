@@ -54,17 +54,18 @@ struct StatsRowView: View {
                 return Calendar.current.isDate(dueDate, inSameDayAs: Date())
             }.count
 
+            // Use completionDate instead of dueDate for completed metrics
             completedToday = tasks.filter { task in
-                task.isCompleted &&
-                Calendar.current.isDateInToday(task.dueDate ?? Date.distantPast)
+                guard task.isCompleted, let completionDate = task.completionDate else { return false }
+                return Calendar.current.isDateInToday(completionDate)
             }.count
 
             completedThisWeek = tasks.filter { task in
-                task.isCompleted &&
-                isInCurrentWeek(task.dueDate)
+                guard task.isCompleted else { return false }
+                return isInCurrentWeek(task.completionDate)
             }.count
         } catch {
-            // Silently fall back to 0
+            print("Error loading task stats: \(error)")
         }
 
         // Load events
@@ -72,7 +73,7 @@ struct StatsRowView: View {
             let events = try await calendarService.fetchTodayEvents()
             eventsToday = events.count
         } catch {
-            // Silently fall back to 0
+            print("Error loading event stats: \(error)")
         }
     }
 

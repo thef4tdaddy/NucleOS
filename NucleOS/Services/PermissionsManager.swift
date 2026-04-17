@@ -31,6 +31,8 @@ final class PermissionsManager: ObservableObject {
 
     // MARK: - Request Permissions
 
+    // NOTE: requestFullAccessToReminders() requires NSRemindersFullAccessUsageDescription in Info.plist
+    // Add a user-facing description like "NucleOS needs full access to your reminders to display and manage tasks"
     func requestRemindersAccess() async -> Bool {
         do {
             let granted = try await eventStore.requestFullAccessToReminders()
@@ -38,7 +40,8 @@ final class PermissionsManager: ObservableObject {
             return granted
         } catch {
             print("Error requesting reminders access: \(error)")
-            remindersAuthStatus = .denied
+            // Re-query actual system status instead of assuming .denied
+            remindersAuthStatus = EKEventStore.authorizationStatus(for: .reminder)
             return false
         }
     }
@@ -50,7 +53,8 @@ final class PermissionsManager: ObservableObject {
             return granted
         } catch {
             print("Error requesting calendar access: \(error)")
-            calendarAuthStatus = .denied
+            // Re-query actual system status instead of assuming .denied
+            calendarAuthStatus = EKEventStore.authorizationStatus(for: .event)
             return false
         }
     }

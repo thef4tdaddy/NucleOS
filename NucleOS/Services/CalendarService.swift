@@ -82,7 +82,15 @@ class CalendarService: CalendarServiceProtocol {
             calendars: calendars
         )
 
-        let ekEvents = eventStore.events(matching: predicate)
+        // Capture eventStore before detaching to avoid actor isolation issues
+        let store = eventStore
+
+        // Move heavy EventKit query off main actor
+        let ekEvents = await Task.detached {
+            store.events(matching: predicate)
+        }.value
+
+        // Convert on main actor since this is UI-safe
         return ekEvents.compactMap { convertToNucleEvent(from: $0) }
     }
 

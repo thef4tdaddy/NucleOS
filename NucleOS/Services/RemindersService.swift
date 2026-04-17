@@ -22,6 +22,7 @@ protocol RemindersServiceProtocol {
 enum RemindersServiceError: LocalizedError {
     case permissionDenied
     case fetchFailed(Error)
+    case fetchReturnedNil
     case unimplemented
 
     var errorDescription: String? {
@@ -30,6 +31,8 @@ enum RemindersServiceError: LocalizedError {
             return "Reminders access was denied. Please grant permission in System Settings."
         case .fetchFailed(let error):
             return "Failed to fetch reminders: \(error.localizedDescription)"
+        case .fetchReturnedNil:
+            return "Failed to fetch reminders: EventKit returned nil"
         case .unimplemented:
             return "This feature is not implemented yet."
         }
@@ -64,7 +67,8 @@ class RemindersService: RemindersServiceProtocol {
                     if let ekReminders = ekReminders {
                         continuation.resume(returning: ekReminders)
                     } else {
-                        continuation.resume(returning: [])
+                        // nil indicates a fetch failure, not an empty result
+                        continuation.resume(throwing: RemindersServiceError.fetchReturnedNil)
                     }
                 }
             }
@@ -94,20 +98,27 @@ class RemindersService: RemindersServiceProtocol {
             return nil
         }
 
+        // Map priority according to RFC5545:
+        // 0 = undefined/none, 1-4 = high, 5 = medium, 6-9 = low
         let priority: NucleTask.Priority
         switch ekReminder.priority {
-        case 1...3:
+        case 0:
+            priority = .none
+        case 1...4:
             priority = .high
-        case 4...6:
+        case 5:
             priority = .medium
-        default:
+        case 6...9:
             priority = .low
+        default:
+            priority = .none
         }
 
         return NucleTask(
             title: title,
             isCompleted: ekReminder.isCompleted,
             dueDate: ekReminder.dueDateComponents?.date,
+            completionDate: ekReminder.completionDate,
             notes: ekReminder.notes,
             priority: priority
         )

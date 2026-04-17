@@ -12,10 +12,12 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var title: String
     var isCompleted: Bool
     var dueDate: Date?
+    var completionDate: Date?
     var notes: String?
     var priority: Priority
 
     enum Priority: Int, CaseIterable, Sendable {
+        case none = -1
         case low = 0
         case medium = 1
         case high = 2
@@ -26,6 +28,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         title: String,
         isCompleted: Bool = false,
         dueDate: Date? = nil,
+        completionDate: Date? = nil,
         notes: String? = nil,
         priority: Priority = .medium
     ) {
@@ -33,6 +36,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         self.title = title
         self.isCompleted = isCompleted
         self.dueDate = dueDate
+        self.completionDate = completionDate
         self.notes = notes
         self.priority = priority
     }

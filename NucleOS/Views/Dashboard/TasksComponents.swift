@@ -11,6 +11,7 @@ struct TasksPanelView: View {
     @State private var tasks: [NucleTask] = []
     @State private var isLoading = false
     @State private var error: String?
+    @State private var permissionDenied = false
 
     private let remindersService = RemindersService()
 
@@ -37,7 +38,15 @@ struct TasksPanelView: View {
                 .disabled(true) // Disabled until add functionality is implemented
             }
 
-            if let error = error {
+            if permissionDenied {
+                PermissionDeniedView(
+                    icon: "checklist",
+                    message: "Grant Reminders access to see your tasks",
+                    action: {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                    }
+                )
+            } else if let error = error {
                 ErrorStateView(message: error)
             } else if tasks.isEmpty && !isLoading {
                 EmptyStateView(message: "No tasks found")
@@ -71,18 +80,46 @@ struct TasksPanelView: View {
     private func loadTasks() async {
         isLoading = true
         error = nil
+        permissionDenied = false
 
         do {
             let allTasks = try await remindersService.fetchTasks()
             tasks = allTasks.filter { !$0.isCompleted }
         } catch RemindersServiceError.permissionDenied {
-            // Fall back to mock data
-            tasks = (try? await MockRemindersService().fetchTasks()) ?? []
+            permissionDenied = true
         } catch {
             self.error = error.localizedDescription
         }
 
         isLoading = false
+    }
+}
+
+struct PermissionDeniedView: View {
+    let icon: String
+    let message: String
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 32))
+                .foregroundColor(.textMuted)
+
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+
+            Button(action: action, label: {
+                Text("Open System Settings")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.accentPrimary)
+            })
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 }
 

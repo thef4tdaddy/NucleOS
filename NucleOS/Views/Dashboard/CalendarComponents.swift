@@ -11,6 +11,7 @@ struct CalendarPanelView: View {
     @State private var events: [NucleEvent] = []
     @State private var isLoading = false
     @State private var error: String?
+    @State private var permissionDenied = false
 
     private let calendarService = CalendarService()
 
@@ -37,7 +38,15 @@ struct CalendarPanelView: View {
                 .disabled(true) // Disabled until add functionality is implemented
             }
 
-            if let error = error {
+            if permissionDenied {
+                PermissionDeniedView(
+                    icon: "calendar",
+                    message: "Grant Calendar access to see your events",
+                    action: {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                    }
+                )
+            } else if let error = error {
                 ErrorStateView(message: error)
             } else if events.isEmpty && !isLoading {
                 EmptyStateView(message: "No events today")
@@ -71,12 +80,12 @@ struct CalendarPanelView: View {
     private func loadEvents() async {
         isLoading = true
         error = nil
+        permissionDenied = false
 
         do {
             events = try await calendarService.fetchTodayEvents()
         } catch CalendarServiceError.permissionDenied {
-            // Fall back to mock data
-            events = (try? await MockCalendarService().fetchTodayEvents()) ?? []
+            permissionDenied = true
         } catch {
             self.error = error.localizedDescription
         }

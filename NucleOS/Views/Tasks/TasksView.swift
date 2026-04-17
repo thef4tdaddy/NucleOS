@@ -12,6 +12,8 @@ struct TasksView: View {
     @State private var isLoading = false
     @State private var error: String?
     @State private var showCompleted = false
+    @State private var permissionDenied = false
+    @State private var currentLoadTask: Task<Void, Never>?
 
     private let remindersService = RemindersService()
 
@@ -38,11 +40,15 @@ struct TasksView: View {
                         .tint(.accentPrimary)
                 }
 
-                Button(action: { Task { await loadTasks() } }, label: {
+                Button(action: {
+                    currentLoadTask?.cancel()
+                    currentLoadTask = Task { await loadTasks() }
+                }, label: {
                     Image(systemName: "arrow.clockwise")
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
+                .disabled(isLoading)
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
@@ -52,7 +58,29 @@ struct TasksView: View {
                 .background(Color.border)
 
             // Content
-            if let error = error {
+            if permissionDenied {
+                VStack(spacing: 16) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 48))
+                        .foregroundColor(.textMuted)
+
+                    Text("Grant Reminders access to see your tasks")
+                        .font(.system(size: 16))
+                        .foregroundColor(.textSecondary)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                    }, label: {
+                        Text("Open System Settings")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.accentPrimary)
+                    })
+                    .buttonStyle(.plain)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else if let error = error {
                 ErrorStateView(message: error)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if tasks.isEmpty && !isLoading {
@@ -121,19 +149,23 @@ struct TasksView: View {
     }
 
     private func loadTasks() async {
+        // Early exit if task was cancelled
+        guard !Task.isCancelled else { return }
+
         isLoading = true
         error = nil
+        permissionDenied = false
 
         do {
             tasks = try await remindersService.fetchTasks()
         } catch RemindersServiceError.permissionDenied {
-            // Fall back to mock data
-            tasks = (try? await MockRemindersService().fetchTasks()) ?? []
+            permissionDenied = true
         } catch {
             self.error = error.localizedDescription
         }
 
         isLoading = false
+        currentLoadTask = nil
     }
 }
 
@@ -194,6 +226,7 @@ struct TaskCardView: View {
                         .foregroundColor(isOverdue(dueDate) ? .red : .textMuted)
                     }
 
+                    // Only show priority badge for high priority (hide .none, .low, .medium)
                     if task.priority == .high {
                         HStack(spacing: 4) {
                             Image(systemName: "exclamationmark.circle.fill")

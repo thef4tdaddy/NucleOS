@@ -12,6 +12,8 @@ struct CalendarView: View {
     @State private var isLoading = false
     @State private var error: String?
     @State private var selectedDays = 7
+    @State private var loadTask: Task<Void, Never>?
+    @State private var showingMockData = false
 
     private let calendarService = CalendarService()
 
@@ -41,21 +43,21 @@ struct CalendarView: View {
                 Menu(content: {
                     Button(action: {
                         selectedDays = 1
-                        Task { await loadEvents() }
+                        startLoadEvents()
                     }, label: {
                         Text("Today")
                     })
 
                     Button(action: {
                         selectedDays = 7
-                        Task { await loadEvents() }
+                        startLoadEvents()
                     }, label: {
                         Text("Next 7 Days")
                     })
 
                     Button(action: {
                         selectedDays = 30
-                        Task { await loadEvents() }
+                        startLoadEvents()
                     }, label: {
                         Text("Next 30 Days")
                     })
@@ -69,12 +71,16 @@ struct CalendarView: View {
                     }
                     .foregroundColor(.accentPrimary)
                 })
+                .disabled(isLoading)
+                .accessibilityLabel("Select day range")
 
-                Button(action: { Task { await loadEvents() } }, label: {
+                Button(action: { startLoadEvents() }, label: {
                     Image(systemName: "arrow.clockwise")
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
+                .disabled(isLoading)
+                .accessibilityLabel("Refresh events")
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
@@ -115,9 +121,18 @@ struct CalendarView: View {
         return grouped.sorted { $0.key < $1.key }
     }
 
+    private func startLoadEvents() {
+        // Cancel any in-flight task to prevent races
+        loadTask?.cancel()
+        loadTask = Task {
+            await loadEvents()
+        }
+    }
+
     private func loadEvents() async {
         isLoading = true
         error = nil
+        showingMockData = false
 
         do {
             if selectedDays == 1 {
@@ -126,17 +141,25 @@ struct CalendarView: View {
                 events = try await calendarService.fetchUpcomingEvents(days: selectedDays)
             }
         } catch CalendarServiceError.permissionDenied {
-            // Fall back to mock data
-            if selectedDays == 1 {
-                events = (try? await MockCalendarService().fetchTodayEvents()) ?? []
-            } else {
-                events = (try? await MockCalendarService().fetchUpcomingEvents(days: selectedDays)) ?? []
+            // Show mock data with clear indication
+            showingMockData = true
+            do {
+                if selectedDays == 1 {
+                    events = try await MockCalendarService().fetchTodayEvents()
+                } else {
+                    events = try await MockCalendarService().fetchUpcomingEvents(days: selectedDays)
+                }
+                self.error = "Showing sample data. Grant Calendar access in System Settings to see your events."
+            } catch {
+                self.error = "Calendar permission denied: \(error.localizedDescription)"
+                events = []
             }
         } catch {
             self.error = error.localizedDescription
         }
 
         isLoading = false
+        loadTask = nil
     }
 }
 
