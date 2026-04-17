@@ -35,7 +35,7 @@ extension Date {
     /// The past 24 hours: from 24 hours ago to now.
     static func last24HoursRange() -> (start: Date, end: Date) {
         let end = Date()
-        let start = end.addingTimeInterval(-24 * 3600)
+        let start = Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end.addingTimeInterval(-86400)
         return (start, end)
     }
 }
