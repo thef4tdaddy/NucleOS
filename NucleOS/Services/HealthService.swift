@@ -303,11 +303,11 @@ class HealthService: HealthServiceProtocol {
 
 /// Fallback `HealthService` for platforms where HealthKit is unavailable at compile time.
 class HealthService: HealthServiceProtocol {
-    func requestAuthorization() async throws         { throw HealthServiceError.unavailable }
-    func fetchSteps()    async throws -> Int          { throw HealthServiceError.unavailable }
-    func fetchHeartRate() async throws -> Double      { throw HealthServiceError.unavailable }
-    func fetchSleep()    async throws -> TimeInterval { throw HealthServiceError.unavailable }
-    func fetchCalories() async throws -> Double       { throw HealthServiceError.unavailable }
+    func requestAuthorization() async throws { throw HealthServiceError.unavailable }
+    func fetchSteps() async throws -> Int { throw HealthServiceError.unavailable }
+    func fetchHeartRate() async throws -> Double { throw HealthServiceError.unavailable }
+    func fetchSleep() async throws -> TimeInterval { throw HealthServiceError.unavailable }
+    func fetchCalories() async throws -> Double { throw HealthServiceError.unavailable }
     func fetchSnapshot() async throws -> HealthSnapshot { throw HealthServiceError.unavailable }
 }
 
