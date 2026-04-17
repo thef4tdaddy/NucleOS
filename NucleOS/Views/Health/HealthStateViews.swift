@@ -95,9 +95,43 @@ struct HealthUnavailableView: View {
     }
 }
 
+// MARK: - Request Permission State
+
+/// Shown when HealthKit authorization has not yet been requested.
+struct HealthRequestPermissionView: View {
+    let onRequest: () -> Void
+
+    var body: some View {
+        HealthStateContainer {
+            HealthStateIcon(
+                systemName: "heart.fill",
+                color: .accentLavender
+            )
+
+            HealthStateText(
+                title: "Connect to Health",
+                description: "Grant access to your health data so NucleOS can display your steps, heart rate, sleep, and calories."
+            )
+
+            Button(action: onRequest) {
+                Label("Authorize Health Access", systemImage: "heart.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.textPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentPrimary)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
 // MARK: - Shared Subviews
 
-private struct HealthStateContainer<Content: View>: View {
+struct HealthStateContainer<Content: View>: View {
     let content: () -> Content
 
     init(@ViewBuilder content: @escaping () -> Content) {
@@ -122,7 +156,7 @@ private struct HealthStateContainer<Content: View>: View {
     }
 }
 
-private struct HealthStateIcon: View {
+struct HealthStateIcon: View {
     let systemName: String
     let color: Color
 
@@ -139,7 +173,7 @@ private struct HealthStateIcon: View {
     }
 }
 
-private struct HealthStateText: View {
+struct HealthStateText: View {
     let title: String
     let description: String
 
@@ -160,6 +194,12 @@ private struct HealthStateText: View {
 }
 
 // MARK: - Previews
+
+#Preview("Request Permission") {
+    HealthRequestPermissionView(onRequest: {})
+        .frame(width: 600, height: 400)
+        .background(Color.backgroundPrimary)
+}
 
 #Preview("Empty State") {
     HealthEmptyStateView()

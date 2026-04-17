@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */; platformFilters = (ios, maccatalyst, macos, visionos, ); };
+		AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */; platformFilters = (macos, ); };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */

@@ -84,6 +84,9 @@ final class HealthViewModel: ObservableObject {
             case .unavailable:
                 permissionState = .unavailable
             }
+        } catch HealthKitAuthorizationError.healthDataUnavailable {
+            permissionState = .unavailable
+            snapshot = nil
         } catch {
             permissionState = .denied
             snapshot = nil
