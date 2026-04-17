@@ -7,7 +7,15 @@
 
 import SwiftUI
 
+/// Dashboard panel that lists the user's upcoming incomplete tasks from Reminders.
 struct TasksPanelView: View {
+    @State private var tasks: [NucleTask] = []
+    @State private var isLoading = false
+    @State private var error: String?
+    @State private var permissionDenied = false
+
+    private let remindersService = RemindersService()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -17,19 +25,40 @@ struct TasksPanelView: View {
 
                 Spacer()
 
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.accentPrimary)
+                }
+
                 Button(action: {}, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
+                .disabled(true) // Disabled until add functionality is implemented
             }
 
-            VStack(spacing: 12) {
-                TaskRow(title: "Review quarterly goals", isCompleted: false)
-                TaskRow(title: "Update project documentation", isCompleted: true)
-                TaskRow(title: "Team sync at 2pm", isCompleted: false)
-                TaskRow(title: "Prepare presentation slides", isCompleted: false)
-                TaskRow(title: "Code review for PR #234", isCompleted: true)
+            if permissionDenied {
+                PermissionDeniedView(
+                    icon: "checklist",
+                    message: "Grant Reminders access to see your tasks",
+                    action: {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                    }
+                )
+            } else if let error = error {
+                ErrorStateView(message: error)
+            } else if tasks.isEmpty && !isLoading {
+                EmptyStateView(message: "No tasks found")
+            } else {
+                ScrollView(content: {
+                    VStack(spacing: 12) {
+                        ForEach(tasks.prefix(5), content: { task in
+                            TaskRow(task: task)
+                        })
+                    }
+                })
             }
 
             Spacer()
@@ -44,26 +73,139 @@ struct TasksPanelView: View {
                         .stroke(Color.border, lineWidth: 1)
                 )
         )
+        .task(priority: .userInitiated) {
+            await loadTasks()
+        }
+    }
+
+    /// Fetches incomplete tasks from Reminders; sets `permissionDenied` if access is not granted.
+    private func loadTasks() async {
+        isLoading = true
+        error = nil
+        permissionDenied = false
+
+        do {
+            let allTasks = try await remindersService.fetchTasks()
+            tasks = allTasks.filter { !$0.isCompleted }
+        } catch RemindersServiceError.permissionDenied {
+            permissionDenied = true
+        } catch {
+            self.error = error.localizedDescription
+        }
+
+        isLoading = false
     }
 }
 
+/// Full-screen prompt shown when the user has not granted Reminders or Calendar access.
+struct PermissionDeniedView: View {
+    /// SF Symbol name for the accompanying icon.
+    let icon: String
+    /// Short explanation of why access is needed.
+    let message: String
+    /// Action invoked when the user taps "Open System Settings".
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 32))
+                .foregroundColor(.textMuted)
+
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+
+            Button(action: action, label: {
+                Text("Open System Settings")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.accentPrimary)
+            })
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+}
+
+/// A single compact task row used inside ``TasksPanelView``.
 struct TaskRow: View {
-    let title: String
-    let isCompleted: Bool
+    /// The task to display.
+    let task: NucleTask
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isCompleted ? .accentPrimary : .textMuted)
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(task.isCompleted ? .accentPrimary : .textMuted)
                 .font(.system(size: 16))
 
-            Text(title)
+            Text(task.title)
                 .font(.system(size: 13))
-                .foregroundColor(isCompleted ? .textMuted : .textPrimary)
-                .strikethrough(isCompleted)
+                .foregroundColor(task.isCompleted ? .textMuted : .textPrimary)
+                .strikethrough(task.isCompleted)
 
             Spacer()
+
+            if let dueDate = task.dueDate {
+                Text(formatDueDate(dueDate))
+                    .font(.system(size: 11))
+                    .foregroundColor(.textMuted)
+            }
         }
         .padding(.vertical, 6)
+    }
+
+    /// Returns a short human-readable string for `date`: time-only if today, short date otherwise.
+    private func formatDueDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            return formatter.string(from: date)
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            return formatter.string(from: date)
+        }
+    }
+}
+
+/// Placeholder shown when a list has no items to display.
+struct EmptyStateView: View {
+    /// Short explanation of the empty state.
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 32))
+                .foregroundColor(.textMuted)
+
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(.textSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Placeholder shown when a data fetch encounters an error.
+struct ErrorStateView: View {
+    /// Localised error description to display.
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 32))
+                .foregroundColor(.textMuted)
+
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
