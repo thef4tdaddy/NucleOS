@@ -20,6 +20,7 @@ extension Color {
     static let accentPrimary = Color(hex: "5b3fd4")
     static let accentLight = Color(hex: "7c5cf0")
     static let accentLavender = Color(hex: "c4b5fd")
+    static let accentWarm = Color(hex: "ff6b6b")
 
     // Text
     static let textPrimary = Color(hex: "ede9ff")

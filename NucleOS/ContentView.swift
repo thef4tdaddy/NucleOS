@@ -27,7 +27,7 @@ struct ContentView: View {
                     case .calendar:
                         PlaceholderView(title: "Calendar")
                     case .health:
-                        PlaceholderView(title: "Health")
+                        HealthView()
                     case .aiBriefing:
                         PlaceholderView(title: "AI Briefing")
                     case .focus:
