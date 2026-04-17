@@ -16,7 +16,7 @@ final class PermissionsManager: ObservableObject {
     @Published var remindersAuthStatus: EKAuthorizationStatus = .notDetermined
     @Published var calendarAuthStatus: EKAuthorizationStatus = .notDetermined
 
-    private let eventStore = EKEventStore()
+    let eventStore = EKEventStore()
 
     private init() {
         updateAuthorizationStatuses()
