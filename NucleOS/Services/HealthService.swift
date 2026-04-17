@@ -46,27 +46,88 @@ class HealthService: HealthServiceProtocol {
         // TODO: Uncomment once HealthKit is imported:
         // guard HKHealthStore.isHealthDataAvailable() else { throw HealthServiceError.unavailable }
 
-        // Query each metric independently so a partial failure can be surfaced
-        // or given a default value without blocking the whole snapshot.
-        async let steps = querySteps()
-        async let heartRate = queryHeartRate()
-        async let sleepDuration = querySleep()
-        async let activeCalories = queryCalories()
+        // Kick off all four queries concurrently.
+        async let stepsTask = querySteps()
+        async let heartRateTask = queryHeartRate()
+        async let sleepDurationTask = querySleep()
+        async let activeCaloriesTask = queryCalories()
+
+        var steps = 0
+        var heartRate = 0.0
+        var sleepDuration: TimeInterval = 0
+        var activeCalories = 0.0
+
+        var firstRecoverableError: Error?
+        var failedMetricCount = 0
+
+        do {
+            steps = try await stepsTask
+        } catch {
+            if shouldRethrowMetricError(error) { throw error }
+            failedMetricCount += 1
+            firstRecoverableError = firstRecoverableError ?? error
+        }
+
+        do {
+            heartRate = try await heartRateTask
+        } catch {
+            if shouldRethrowMetricError(error) { throw error }
+            failedMetricCount += 1
+            firstRecoverableError = firstRecoverableError ?? error
+        }
+
+        do {
+            sleepDuration = try await sleepDurationTask
+        } catch {
+            if shouldRethrowMetricError(error) { throw error }
+            failedMetricCount += 1
+            firstRecoverableError = firstRecoverableError ?? error
+        }
+
+        do {
+            activeCalories = try await activeCaloriesTask
+        } catch {
+            if shouldRethrowMetricError(error) { throw error }
+            failedMetricCount += 1
+            firstRecoverableError = firstRecoverableError ?? error
+        }
+
+        // If every single metric failed with a recoverable error (e.g. all
+        // permissions denied) surface the first error rather than returning an
+        // all-zero snapshot that is indistinguishable from real data.
+        if failedMetricCount == 4, let firstRecoverableError {
+            throw firstRecoverableError
+        }
 
         // Map raw HealthKit values → HealthSnapshot (the app-facing model).
         // Individual metrics that fail to load fall back to 0 so that a single
         // unavailable data type (e.g. no heart-rate permission) doesn't block
-        // the rest of the snapshot. The dashboard checks for 0 values to show
-        // appropriate "—" placeholders instead of incorrect zeros.
+        // the rest of the snapshot from being returned.
         return HealthSnapshot(
-            steps: (try? await steps) ?? 0,
-            heartRate: (try? await heartRate) ?? 0,
-            sleepDuration: (try? await sleepDuration) ?? 0,
-            activeCalories: (try? await activeCalories) ?? 0
+            steps: steps,
+            heartRate: heartRate,
+            sleepDuration: sleepDuration,
+            activeCalories: activeCalories
         )
     }
 
     // MARK: Private — Per-metric HealthKit queries
+
+    /// Returns `true` for errors that represent a programming mistake or
+    /// unrecoverable state and should propagate out of `fetchSnapshot()`.
+    /// Returns `false` for expected per-metric failures (e.g. permission
+    /// denied for a single data type) where graceful degradation is appropriate.
+    private func shouldRethrowMetricError(_ error: Error) -> Bool {
+        guard let healthServiceError = error as? HealthServiceError else {
+            return false
+        }
+        switch healthServiceError {
+        case .notImplemented:
+            return true
+        case .unavailable:
+            return false
+        }
+    }
 
     /// Queries today's step count via `HKQuantityType.stepCount`.
     private func querySteps() async throws -> Int {
