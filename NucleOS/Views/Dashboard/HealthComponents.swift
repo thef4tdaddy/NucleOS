@@ -2,48 +2,54 @@
 //  HealthComponents.swift
 //  NucleOS
 //
-//  Health strip and health metric cards
+//  Health strip and health metric cards used on the main dashboard
 //
 
 import SwiftUI
 
 struct HealthStripView: View {
+    let snapshot: HealthSnapshot
+
+    init(snapshot: HealthSnapshot = MockData.healthSnapshot) {
+        self.snapshot = snapshot
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             HealthMetricCard(
                 icon: "figure.walk",
                 label: "Steps",
-                value: "8,234",
-                goal: "10,000",
-                progress: 0.82,
+                value: snapshot.steps.formatted(),
+                goal: snapshot.stepGoal.formatted(),
+                progress: snapshot.stepsProgress,
                 color: .accentLavender
             )
 
             HealthMetricCard(
                 icon: "heart.fill",
                 label: "Heart Rate",
-                value: "72",
+                value: "\(Int(snapshot.heartRate))",
                 goal: "avg",
-                progress: 0.7,
+                progress: max(0, min(snapshot.heartRate / 100, 1.0)),
                 color: .accentPrimary
             )
 
             HealthMetricCard(
                 icon: "bed.double.fill",
                 label: "Sleep",
-                value: "7h 23m",
-                goal: "8h",
-                progress: 0.92,
+                value: snapshot.sleepFormatted,
+                goal: snapshot.sleepGoalFormatted,
+                progress: snapshot.sleepProgress,
                 color: .accentLight
             )
 
             HealthMetricCard(
                 icon: "flame.fill",
                 label: "Calories",
-                value: "1,847",
-                goal: "2,200",
-                progress: 0.84,
-                color: Color(hex: "ff6b6b")
+                value: Int(snapshot.activeCalories).formatted(),
+                goal: Int(snapshot.calorieGoal).formatted(),
+                progress: snapshot.caloriesProgress,
+                color: .accentWarm
             )
         }
     }
@@ -108,4 +114,10 @@ struct HealthMetricCard: View {
                 )
         )
     }
+}
+
+#Preview {
+    HealthStripView()
+        .padding(32)
+        .background(Color.backgroundPrimary)
 }
