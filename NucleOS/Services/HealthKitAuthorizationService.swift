@@ -182,7 +182,6 @@ final class MockHealthKitAuthorizationService: HealthKitAuthorizationServiceProt
     }
 
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
-        checkStatusResult = requestAuthorizationResult
         return requestAuthorizationResult
     }
 }
