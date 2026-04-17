@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if canImport(HealthKit)
 import HealthKit
+#endif
 
 // MARK: - Protocol
 
@@ -41,7 +43,11 @@ enum HealthServiceError: LocalizedError {
         case .unavailable:
             return "HealthKit is not available on this device."
         case .unauthorized:
+#if os(macOS)
             return "HealthKit access has been denied. Please grant access in System Settings → Privacy & Security → Health."
+#else
+            return "HealthKit access has been denied. Please grant access in Settings → Privacy & Security → Health."
+#endif
         case .noData:
             return "No health data is available for the requested time range."
         case .queryFailed(let underlying):
@@ -51,6 +57,8 @@ enum HealthServiceError: LocalizedError {
 }
 
 // MARK: - Real Implementation
+
+#if canImport(HealthKit)
 
 /// Concrete HealthKit-backed implementation.
 ///
@@ -73,6 +81,22 @@ class HealthService: HealthServiceProtocol {
         return types
     }()
 
+    // MARK: - Error mapping
+
+    /// Converts an `HKError` to the appropriate `HealthServiceError`.
+    /// Authorization-denied codes map to `.unauthorized`; everything else maps to `.queryFailed`.
+    private func mapHKError(_ error: Error) -> HealthServiceError {
+        if let hkError = error as? HKError {
+            switch hkError.code {
+            case .errorAuthorizationDenied, .errorAuthorizationNotDetermined:
+                return .unauthorized
+            default:
+                return .queryFailed(error)
+            }
+        }
+        return .queryFailed(error)
+    }
+
     // MARK: - Authorization
 
     func requestAuthorization() async throws {
@@ -82,8 +106,12 @@ class HealthService: HealthServiceProtocol {
         do {
             try await store.requestAuthorization(toShare: [], read: Self.readTypes)
         } catch {
-            throw HealthServiceError.queryFailed(error)
+            throw mapHKError(error)
         }
+        // Note: HealthKit does not expose read-access denial status for privacy reasons —
+        // `authorizationStatus(for:)` always returns `.notDetermined` for read types.
+        // Authorization denial will surface as `.unauthorized` when a query explicitly
+        // returns `HKError.errorAuthorizationDenied`, or as `.noData` when results are empty.
     }
 
     // MARK: - Steps
@@ -93,8 +121,10 @@ class HealthService: HealthServiceProtocol {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
         }
+        guard let type = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            throw HealthServiceError.unavailable
+        }
 
-        let type = HKQuantityType(.stepCount)
         let predicate = HKQuery.predicateForSamples(
             withStart: .startOfToday,
             end: Date(),
@@ -108,11 +138,14 @@ class HealthService: HealthServiceProtocol {
                 options: .cumulativeSum
             ) { _, result, error in
                 if let error = error {
-                    continuation.resume(throwing: HealthServiceError.queryFailed(error))
+                    continuation.resume(throwing: self.mapHKError(error))
                     return
                 }
-                let steps = result?.sumQuantity()?.doubleValue(for: .count()) ?? 0
-                continuation.resume(returning: Int(steps.rounded()))
+                guard let sum = result?.sumQuantity() else {
+                    continuation.resume(throwing: HealthServiceError.noData)
+                    return
+                }
+                continuation.resume(returning: Int(sum.doubleValue(for: .count()).rounded()))
             }
             store.execute(query)
         }
@@ -125,8 +158,10 @@ class HealthService: HealthServiceProtocol {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
         }
+        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            throw HealthServiceError.unavailable
+        }
 
-        let type = HKQuantityType(.heartRate)
         let (start, end) = Date.last24HoursRange()
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
@@ -139,7 +174,7 @@ class HealthService: HealthServiceProtocol {
                 sortDescriptors: [sortDescriptor]
             ) { _, samples, error in
                 if let error = error {
-                    continuation.resume(throwing: HealthServiceError.queryFailed(error))
+                    continuation.resume(throwing: self.mapHKError(error))
                     return
                 }
                 guard let sample = samples?.first as? HKQuantitySample else {
@@ -163,8 +198,10 @@ class HealthService: HealthServiceProtocol {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
         }
+        guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            throw HealthServiceError.unavailable
+        }
 
-        let type = HKCategoryType(.sleepAnalysis)
         let (start, end) = Date.lastNightRange()
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
@@ -177,7 +214,13 @@ class HealthService: HealthServiceProtocol {
                 sortDescriptors: [sortDescriptor]
             ) { _, samples, error in
                 if let error = error {
-                    continuation.resume(throwing: HealthServiceError.queryFailed(error))
+                    continuation.resume(throwing: self.mapHKError(error))
+                    return
+                }
+
+                guard let categorySamples = samples as? [HKCategorySample],
+                      !categorySamples.isEmpty else {
+                    continuation.resume(throwing: HealthServiceError.noData)
                     return
                 }
 
@@ -189,11 +232,11 @@ class HealthService: HealthServiceProtocol {
                     HKCategoryValueSleepAnalysis.asleepREM.rawValue,
                 ]
 
-                let total = (samples as? [HKCategorySample])?.reduce(0.0) { acc, sample in
+                let total = categorySamples.reduce(0.0) { acc, sample in
                     asleepValues.contains(sample.value)
                         ? acc + sample.endDate.timeIntervalSince(sample.startDate)
                         : acc
-                } ?? 0
+                }
 
                 continuation.resume(returning: total)
             }
@@ -208,8 +251,10 @@ class HealthService: HealthServiceProtocol {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
         }
+        guard let type = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            throw HealthServiceError.unavailable
+        }
 
-        let type = HKQuantityType(.activeEnergyBurned)
         let predicate = HKQuery.predicateForSamples(
             withStart: .startOfToday,
             end: Date(),
@@ -223,11 +268,14 @@ class HealthService: HealthServiceProtocol {
                 options: .cumulativeSum
             ) { _, result, error in
                 if let error = error {
-                    continuation.resume(throwing: HealthServiceError.queryFailed(error))
+                    continuation.resume(throwing: self.mapHKError(error))
                     return
                 }
-                let kcal = result?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
-                continuation.resume(returning: kcal)
+                guard let sum = result?.sumQuantity() else {
+                    continuation.resume(throwing: HealthServiceError.noData)
+                    return
+                }
+                continuation.resume(returning: sum.doubleValue(for: .kilocalorie()))
             }
             store.execute(query)
         }
@@ -250,6 +298,20 @@ class HealthService: HealthServiceProtocol {
         )
     }
 }
+
+#else
+
+/// Fallback `HealthService` for platforms where HealthKit is unavailable at compile time.
+class HealthService: HealthServiceProtocol {
+    func requestAuthorization() async throws         { throw HealthServiceError.unavailable }
+    func fetchSteps()    async throws -> Int          { throw HealthServiceError.unavailable }
+    func fetchHeartRate() async throws -> Double      { throw HealthServiceError.unavailable }
+    func fetchSleep()    async throws -> TimeInterval { throw HealthServiceError.unavailable }
+    func fetchCalories() async throws -> Double       { throw HealthServiceError.unavailable }
+    func fetchSnapshot() async throws -> HealthSnapshot { throw HealthServiceError.unavailable }
+}
+
+#endif
 
 // MARK: - Mock Implementation
 
