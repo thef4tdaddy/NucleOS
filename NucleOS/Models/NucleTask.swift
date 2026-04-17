@@ -24,11 +24,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     /// Relative importance of the task.
     var priority: Priority
 
-    /// Relative importance levels, mapped from RFC 5545 priority integers.
     enum Priority: Int, CaseIterable, Hashable, Sendable {
-        /// No priority set (RFC 5545 value 0).
-        case none = -1
-        /// Low importance (RFC 5545 values 6–9).
         case low = 0
         /// Medium importance (RFC 5545 value 5).
         case medium = 1

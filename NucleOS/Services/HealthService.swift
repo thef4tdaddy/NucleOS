@@ -57,23 +57,22 @@ class HealthService: HealthServiceProtocol {
 
 // MARK: - Mock Implementation
 
-/// Mock implementation with realistic hardcoded data for SwiftUI previews and testing.
+/// Mock implementation backed by `MockData` for SwiftUI previews and testing.
 class MockHealthService: HealthServiceProtocol {
 
     func fetchSteps() async throws -> Int {
-        return 8_432
+        return MockData.healthSnapshot.steps
     }
 
     func fetchHeartRate() async throws -> Double {
-        return 72.0
+        return MockData.healthSnapshot.heartRate
     }
 
     func fetchSleep() async throws -> TimeInterval {
-        // 7 hours 23 minutes in seconds
-        return (7 * 60 + 23) * 60
+        return MockData.healthSnapshot.sleepDuration
     }
 
     func fetchCalories() async throws -> Double {
-        return 487.0
+        return MockData.healthSnapshot.activeCalories
     }
 }
