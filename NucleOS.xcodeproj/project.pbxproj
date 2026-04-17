@@ -13,12 +13,18 @@
 /* Begin PBXFileReference section */
 		0D4E4E902F9180730069B310 /* NucleOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NucleOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		0D4E4E912F9180730069B310 /* NucleOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NucleOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0D4E4E4F2F9123CA0069B310 /* NucleOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NucleOS;
+			sourceTree = "<group>";
+		};
+		0D4E4E922F9180730069B310 /* NucleOSTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NucleOSTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +38,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0D4E4E932F9180730069B310 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -40,7 +53,9 @@
 			children = (
 				0D4E4E4F2F9123CA0069B310 /* NucleOS */,
 				AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */,
+				0D4E4E922F9180730069B310 /* NucleOSTests */,
 				0D4E4E902F9180730069B310 /* NucleOS.app */,
+				0D4E4E912F9180730069B310 /* NucleOSTests.xctest */,
 			);
 			sourceTree = "<group>";
 		};
@@ -69,6 +84,29 @@
 			productReference = 0D4E4E902F9180730069B310 /* NucleOS.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0D4E4E942F9180730069B310 /* NucleOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0D4E4E952F9180730069B310 /* Build configuration list for PBXNativeTarget "NucleOSTests" */;
+			buildPhases = (
+				0D4E4E962F9180730069B310 /* Sources */,
+				0D4E4E932F9180730069B310 /* Frameworks */,
+				0D4E4E972F9180730069B310 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0D4E4E982F9180730069B310 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0D4E4E922F9180730069B310 /* NucleOSTests */,
+			);
+			name = NucleOSTests;
+			packageProductDependencies = (
+			);
+			productName = NucleOSTests;
+			productReference = 0D4E4E912F9180730069B310 /* NucleOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -81,6 +119,10 @@
 				TargetAttributes = {
 					0D4E4E4C2F9123CA0069B310 = {
 						CreatedOnToolsVersion = 26.4;
+					};
+					0D4E4E942F9180730069B310 = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 0D4E4E4C2F9123CA0069B310;
 					};
 				};
 			};
@@ -99,12 +141,20 @@
 			projectRoot = "";
 			targets = (
 				0D4E4E4C2F9123CA0069B310 /* NucleOS */,
+				0D4E4E942F9180730069B310 /* NucleOSTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0D4E4E4B2F9123CA0069B310 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0D4E4E972F9180730069B310 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -121,7 +171,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0D4E4E962F9180730069B310 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		0D4E4E992F9180730069B310 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0D4E4E452F9123CA0069B310 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0D4E4E4C2F9123CA0069B310;
+			remoteInfo = NucleOS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		0D4E4E982F9180730069B310 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0D4E4E4C2F9123CA0069B310 /* NucleOS */;
+			targetProxy = 0D4E4E992F9180730069B310 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0D4E4E562F9123CC0069B310 /* Debug */ = {
@@ -342,6 +417,74 @@
 			};
 			name = Release;
 		};
+		0D4E4E9B2F9180730069B310 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XM2AQ5XR74;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = thef4tdaddy.NucleOSTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NucleOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NucleOS";
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Debug;
+		};
+		0D4E4E9C2F9180730069B310 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XM2AQ5XR74;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = thef4tdaddy.NucleOSTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NucleOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NucleOS";
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -359,6 +502,15 @@
 			buildConfigurations = (
 				0D4E4E592F9123CC0069B310 /* Debug */,
 				0D4E4E5A2F9123CC0069B310 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0D4E4E952F9180730069B310 /* Build configuration list for PBXNativeTarget "NucleOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0D4E4E9B2F9180730069B310 /* Debug */,
+				0D4E4E9C2F9180730069B310 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

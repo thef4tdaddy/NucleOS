@@ -227,11 +227,55 @@ final class HealthServiceTests: XCTestCase {
         XCTAssertEqual(snapshot.activeCalories, calories, accuracy: 0.001)
     }
 
+    func testFetchHeartRateIsPhysiologicallyReasonable() async throws {
+        let service = MockHealthService()
+        let heartRate = try await service.fetchHeartRate()
+        XCTAssertGreaterThanOrEqual(heartRate, 40.0)
+        XCTAssertLessThanOrEqual(heartRate, 200.0)
+    }
+
+    func testFetchCaloriesIsPositive() async throws {
+        let service = MockHealthService()
+        let calories = try await service.fetchCalories()
+        XCTAssertGreaterThan(calories, 0.0)
+    }
+
     // MARK: - Protocol conformance
+
 
     func testMockHealthServiceConformsToProtocol() {
         let service: HealthServiceProtocol = MockHealthService()
         XCTAssertNotNil(service)
+    }
+
+    // MARK: - Multiple calls return consistent values
+
+    func testFetchStepsIsIdempotent() async throws {
+        let service = MockHealthService()
+        let steps1 = try await service.fetchSteps()
+        let steps2 = try await service.fetchSteps()
+        XCTAssertEqual(steps1, steps2)
+    }
+
+    func testFetchHeartRateIsIdempotent() async throws {
+        let service = MockHealthService()
+        let rate1 = try await service.fetchHeartRate()
+        let rate2 = try await service.fetchHeartRate()
+        XCTAssertEqual(rate1, rate2, accuracy: 0.001)
+    }
+
+    func testFetchSleepIsIdempotent() async throws {
+        let service = MockHealthService()
+        let sleep1 = try await service.fetchSleep()
+        let sleep2 = try await service.fetchSleep()
+        XCTAssertEqual(sleep1, sleep2, accuracy: 0.001)
+    }
+
+    func testFetchCaloriesIsIdempotent() async throws {
+        let service = MockHealthService()
+        let cal1 = try await service.fetchCalories()
+        let cal2 = try await service.fetchCalories()
+        XCTAssertEqual(cal1, cal2, accuracy: 0.001)
     }
 
     // MARK: - MockData consistency
@@ -260,7 +304,6 @@ final class HealthServiceTests: XCTestCase {
 // MARK: - XCTest async helper
 
 extension XCTestCase {
-    /// Asserts that an async expression does not throw.
     func XCTAssertNoThrowAsync<T>(
         _ expression: @autoclosure () async throws -> T,
         _ message: String = "",

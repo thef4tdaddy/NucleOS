@@ -23,9 +23,9 @@ struct ContentView: View {
                     case .dashboard:
                         DashboardView()
                     case .tasks:
-                        PlaceholderView(title: "Tasks")
+                        TasksView()
                     case .calendar:
-                        PlaceholderView(title: "Calendar")
+                        CalendarView()
                     case .health:
                         HealthView()
                     case .aiBriefing:
