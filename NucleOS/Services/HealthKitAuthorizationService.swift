@@ -140,16 +140,21 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
 
         // Verify the post-request status. HealthKit hides read-access denials for privacy,
         // so `.unnecessary` means the system processed the prompt — treat as authorized.
-        let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
-        switch requestStatus {
-        case .unnecessary:
-            return .authorized
-        case .shouldRequest:
-            return .notDetermined
-        case .unknown:
+        do {
+            let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
+            switch requestStatus {
+            case .unnecessary:
+                return .authorized
+            case .shouldRequest:
+                return .notDetermined
+            case .unknown:
+                throw HealthKitAuthorizationError.authorizationDenied
+            @unknown default:
+                return .notDetermined
+            }
+        } catch {
+            // Any error during status check is treated as authorization denied
             throw HealthKitAuthorizationError.authorizationDenied
-        @unknown default:
-            return .notDetermined
         }
     }
 }

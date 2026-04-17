@@ -15,6 +15,7 @@ final class HealthViewModel: ObservableObject {
     @Published private(set) var permissionState: HealthPermissionState = .notDetermined
     @Published private(set) var snapshot: HealthSnapshot?
     @Published private(set) var isLoading: Bool = false
+    @Published private(set) var lastError: Error?
 
     private let service: HealthServiceProtocol
     private let authService: HealthKitAuthorizationServiceProtocol
@@ -105,14 +106,19 @@ final class HealthViewModel: ObservableObject {
         do {
             let fetched = try await service.fetchSnapshot()
             snapshot = fetched
+            lastError = nil
         } catch HealthServiceError.noData {
             snapshot = nil
             permissionState = .empty
+            lastError = nil
         } catch HealthServiceError.unauthorized {
             snapshot = nil
             permissionState = .denied
+            lastError = nil
         } catch {
-            // Transient or unavailable error — leave permissionState and snapshot unchanged.
+            // Unexpected error — log and set lastError
+            print("⚠️ HealthViewModel.fetchData: Unexpected error: \(error)")
+            lastError = error
         }
     }
 }

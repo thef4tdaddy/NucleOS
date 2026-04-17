@@ -22,12 +22,28 @@ extension Date {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
-        // Yesterday 18:00 (6 PM)
+        // Yesterday at start of day
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-        let start = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: yesterday) ?? yesterday
 
-        // Today 10:00 (10 AM)
-        let end = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: today) ?? today
+        // DST-safe matching: locate yesterday 18:00
+        var startComponents = DateComponents()
+        startComponents.hour = 18
+        startComponents.minute = 0
+        startComponents.second = 0
+        guard let start = calendar.nextDate(after: yesterday.addingTimeInterval(-1), matching: startComponents, matchingPolicy: .nextTime) else {
+            print("⚠️ lastNightRange: Failed to match 18:00 on yesterday, falling back to yesterday start of day")
+            return (yesterday, today)
+        }
+
+        // DST-safe matching: locate today 10:00
+        var endComponents = DateComponents()
+        endComponents.hour = 10
+        endComponents.minute = 0
+        endComponents.second = 0
+        guard let end = calendar.nextDate(after: today.addingTimeInterval(-1), matching: endComponents, matchingPolicy: .nextTime) else {
+            print("⚠️ lastNightRange: Failed to match 10:00 on today, falling back to start + 16h")
+            return (start, start.addingTimeInterval(16 * 3600))
+        }
 
         return (start, end)
     }

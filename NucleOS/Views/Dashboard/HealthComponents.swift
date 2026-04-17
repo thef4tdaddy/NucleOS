@@ -8,49 +8,89 @@
 import SwiftUI
 
 struct HealthStripView: View {
-    let snapshot: HealthSnapshot
+    let snapshot: HealthSnapshot?
 
-    init(snapshot: HealthSnapshot = MockData.healthSnapshot) {
+    init(snapshot: HealthSnapshot? = MockData.healthSnapshot) {
         self.snapshot = snapshot
     }
 
     var body: some View {
-        HStack(spacing: 16) {
-            HealthMetricCard(
-                icon: "figure.walk",
-                label: "Steps",
-                value: snapshot.steps.formatted(),
-                goal: snapshot.stepGoal.formatted(),
-                progress: snapshot.stepsProgress,
-                color: .accentLavender
-            )
+        if let snapshot = snapshot {
+            HStack(spacing: 16) {
+                HealthMetricCard(
+                    icon: "figure.walk",
+                    label: "Steps",
+                    value: snapshot.steps.formatted(),
+                    goal: snapshot.stepGoal.formatted(),
+                    progress: snapshot.stepsProgress,
+                    color: .accentLavender
+                )
 
-            HealthMetricCard(
-                icon: "heart.fill",
-                label: "Heart Rate",
-                value: "\(Int(snapshot.heartRate))",
-                goal: "avg",
-                progress: max(0, min(snapshot.heartRate / 100, 1.0)),
-                color: .accentPrimary
-            )
+                HealthMetricCard(
+                    icon: "heart.fill",
+                    label: "Heart Rate",
+                    value: "\(Int(snapshot.heartRate))",
+                    goal: "avg",
+                    progress: max(0, min(snapshot.heartRate / 100, 1.0)),
+                    color: .accentPrimary
+                )
 
-            HealthMetricCard(
-                icon: "bed.double.fill",
-                label: "Sleep",
-                value: snapshot.sleepFormatted,
-                goal: snapshot.sleepGoalFormatted,
-                progress: snapshot.sleepProgress,
-                color: .accentLight
-            )
+                HealthMetricCard(
+                    icon: "bed.double.fill",
+                    label: "Sleep",
+                    value: snapshot.sleepFormatted,
+                    goal: snapshot.sleepGoalFormatted,
+                    progress: snapshot.sleepProgress,
+                    color: .accentLight
+                )
 
-            HealthMetricCard(
-                icon: "flame.fill",
-                label: "Calories",
-                value: Int(snapshot.activeCalories).formatted(),
-                goal: Int(snapshot.calorieGoal).formatted(),
-                progress: snapshot.caloriesProgress,
-                color: .accentWarm
-            )
+                HealthMetricCard(
+                    icon: "flame.fill",
+                    label: "Calories",
+                    value: Int(snapshot.activeCalories).formatted(),
+                    goal: Int(snapshot.calorieGoal).formatted(),
+                    progress: snapshot.caloriesProgress,
+                    color: .accentWarm
+                )
+            }
+        } else {
+            HStack(spacing: 16) {
+                HealthMetricCard(
+                    icon: "figure.walk",
+                    label: "Steps",
+                    value: "—",
+                    goal: "—",
+                    progress: 0,
+                    color: .accentLavender.opacity(0.3)
+                )
+
+                HealthMetricCard(
+                    icon: "heart.fill",
+                    label: "Heart Rate",
+                    value: "—",
+                    goal: "—",
+                    progress: 0,
+                    color: .accentPrimary.opacity(0.3)
+                )
+
+                HealthMetricCard(
+                    icon: "bed.double.fill",
+                    label: "Sleep",
+                    value: "—",
+                    goal: "—",
+                    progress: 0,
+                    color: .accentLight.opacity(0.3)
+                )
+
+                HealthMetricCard(
+                    icon: "flame.fill",
+                    label: "Calories",
+                    value: "—",
+                    goal: "—",
+                    progress: 0,
+                    color: .accentWarm.opacity(0.3)
+                )
+            }
         }
     }
 }

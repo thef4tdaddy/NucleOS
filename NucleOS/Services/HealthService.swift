@@ -167,7 +167,7 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Heart Rate
 
-    /// Returns the most recent heart rate sample from the past 24 hours, in BPM.
+    /// Returns the average heart rate over the past 24 hours, in BPM.
     func fetchHeartRate() async throws -> Double {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
@@ -178,24 +178,22 @@ class HealthService: HealthServiceProtocol {
 
         let (start, end) = Date.last24HoursRange()
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
         return try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: type,
-                predicate: predicate,
-                limit: 1,
-                sortDescriptors: [sortDescriptor]
-            ) { _, samples, error in
+            let query = HKStatisticsQuery(
+                quantityType: type,
+                quantitySamplePredicate: predicate,
+                options: .discreteAverage
+            ) { _, result, error in
                 if let error = error {
                     continuation.resume(throwing: self.mapHKError(error))
                     return
                 }
-                guard let sample = samples?.first as? HKQuantitySample else {
+                guard let average = result?.averageQuantity() else {
                     continuation.resume(throwing: HealthServiceError.noData)
                     return
                 }
-                let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                let bpm = average.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                 continuation.resume(returning: bpm)
             }
             store.execute(query)
@@ -217,7 +215,7 @@ class HealthService: HealthServiceProtocol {
         }
 
         let (start, end) = Date.lastNightRange()
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -246,10 +244,16 @@ class HealthService: HealthServiceProtocol {
                     HKCategoryValueSleepAnalysis.asleepREM.rawValue,
                 ]
 
+                // Clip each sample interval by intersecting with the query range
                 let total = categorySamples.reduce(0.0) { acc, sample in
-                    asleepValues.contains(sample.value)
-                        ? acc + sample.endDate.timeIntervalSince(sample.startDate)
-                        : acc
+                    guard asleepValues.contains(sample.value) else { return acc }
+
+                    // Clip sample start/end to the query window
+                    let clippedStart = max(sample.startDate, start)
+                    let clippedEnd = min(sample.endDate, end)
+
+                    guard clippedStart < clippedEnd else { return acc }
+                    return acc + clippedEnd.timeIntervalSince(clippedStart)
                 }
 
                 continuation.resume(returning: total)
@@ -298,17 +302,49 @@ class HealthService: HealthServiceProtocol {
     // MARK: - Snapshot
 
     /// Fetches all four metrics concurrently and returns a single `HealthSnapshot`.
+    /// If all four fail, propagates a meaningful error. If at least one succeeds,
+    /// constructs HealthSnapshot from successful values (zeroes for failed metrics).
     func fetchSnapshot() async throws -> HealthSnapshot {
-        async let steps = fetchSteps()
-        async let hr = fetchHeartRate()
-        async let sleep = fetchSleep()
-        async let calories = fetchCalories()
+        // Capture results with error handling
+        let stepsResult = await Result { try await fetchSteps() }
+        let hrResult = await Result { try await fetchHeartRate() }
+        let sleepResult = await Result { try await fetchSleep() }
+        let caloriesResult = await Result { try await fetchCalories() }
 
+        // Extract values or nil
+        let stepsValue = try? stepsResult.get()
+        let hrValue = try? hrResult.get()
+        let sleepValue = try? sleepResult.get()
+        let caloriesValue = try? caloriesResult.get()
+
+        // If all four failed, propagate the dominant error
+        if stepsValue == nil && hrValue == nil && sleepValue == nil && caloriesValue == nil {
+            // Count error types to determine dominant failure
+            let errors = [stepsResult, hrResult, sleepResult, caloriesResult].compactMap { result -> HealthServiceError? in
+                if case .failure(let error) = result {
+                    return error as? HealthServiceError
+                }
+                return nil
+            }
+
+            // Prioritize: unauthorized > noData > queryFailed > unavailable
+            if errors.contains(where: { if case .unauthorized = $0 { return true }; return false }) {
+                throw HealthServiceError.unauthorized
+            } else if errors.contains(where: { if case .noData = $0 { return true }; return false }) {
+                throw HealthServiceError.noData
+            } else if let firstQueryError = errors.first(where: { if case .queryFailed = $0 { return true }; return false }) {
+                throw firstQueryError
+            } else {
+                throw HealthServiceError.unavailable
+            }
+        }
+
+        // At least one metric succeeded — construct snapshot with available data
         return HealthSnapshot(
-            steps: (try? await steps) ?? 0,
-            heartRate: (try? await hr) ?? 0,
-            sleepDuration: (try? await sleep) ?? 0,
-            activeCalories: (try? await calories) ?? 0
+            steps: stepsValue ?? 0,
+            heartRate: hrValue ?? 0,
+            sleepDuration: sleepValue ?? 0,
+            activeCalories: caloriesValue ?? 0
         )
     }
 }

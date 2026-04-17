@@ -34,8 +34,8 @@ struct HealthDetailGridView: View {
                 value: "\(Int(snapshot.heartRate))",
                 goal: "60–100",
                 unit: "bpm",
-                progress: max(0, min(snapshot.heartRate / 100, 1.0)),
-                trend: "Resting average",
+                progress: max(0, min((snapshot.heartRate - 60) / (100 - 60), 1.0)),
+                trend: "24h average",
                 color: .accentPrimary
             )
 

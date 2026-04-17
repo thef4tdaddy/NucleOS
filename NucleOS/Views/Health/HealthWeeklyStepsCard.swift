@@ -18,13 +18,13 @@ struct HealthWeeklyStepsCard: View {
         let day: String
         let steps: Int
         let isToday: Bool
+        let isDataAvailable: Bool
     }
 
     /// Weekly step data with today's real count from the snapshot.
     /// Today's bar uses the live `todaySteps` value from the snapshot.
-    /// Past days show 0 because a per-day history query is outside the scope of
-    /// the current `HealthSnapshot` model (which only captures today's totals).
-    /// Future days show 0 as no data exists yet.
+    /// Past/future days are marked as unavailable because a per-day history query is
+    /// outside the scope of the current `HealthSnapshot` model (which only captures today's totals).
     private var weeklyData: [DayEntry] {
         let calendar = Calendar.current
         let today = calendar.component(.weekday, from: Date())
@@ -35,14 +35,10 @@ struct HealthWeeklyStepsCard: View {
 
         return orderedDays.enumerated().map { index, day in
             if index == todayIndex {
-                return DayEntry(day: day, steps: todaySteps, isToday: true)
-            } else if index < todayIndex {
-                // Past days show 0 — per-day history requires a separate HKStatisticsCollectionQuery
-                // beyond the scope of the current HealthSnapshot model (today's totals only).
-                return DayEntry(day: day, steps: 0, isToday: false)
+                return DayEntry(day: day, steps: todaySteps, isToday: true, isDataAvailable: true)
             } else {
-                // Future days have no data yet
-                return DayEntry(day: day, steps: 0, isToday: false)
+                // Past and future days: data unavailable (per-day history requires HKStatisticsCollectionQuery)
+                return DayEntry(day: day, steps: 0, isToday: false, isDataAvailable: false)
             }
         }
     }
@@ -67,7 +63,8 @@ struct HealthWeeklyStepsCard: View {
                         day: entry.day,
                         steps: entry.steps,
                         goal: stepGoal,
-                        isToday: entry.isToday
+                        isToday: entry.isToday,
+                        isDataAvailable: entry.isDataAvailable
                     )
                 }
             }
@@ -92,13 +89,15 @@ private struct WeeklyStepBar: View {
     let steps: Int
     let goal: Int
     let isToday: Bool
+    let isDataAvailable: Bool
 
     private var progress: Double {
-        guard goal > 0, steps > 0 else { return 0 }
+        guard isDataAvailable, goal > 0, steps > 0 else { return 0 }
         return min(Double(steps) / Double(goal), 1.0)
     }
 
     private var barColor: Color {
+        guard isDataAvailable else { return .border.opacity(0.3) }
         if steps == 0 { return .border }
         return progress >= 1.0 ? .accentPrimary : .accentLight
     }
@@ -108,9 +107,16 @@ private struct WeeklyStepBar: View {
             GeometryReader { geometry in
                 VStack {
                     Spacer()
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(barColor)
-                        .frame(height: max(geometry.size.height * progress, steps > 0 ? 4 : 2))
+                    if isDataAvailable {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(barColor)
+                            .frame(height: max(geometry.size.height * progress, steps > 0 ? 4 : 2))
+                    } else {
+                        // Placeholder visual for unavailable data
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(barColor)
+                            .frame(height: 2)
+                    }
                 }
             }
 

@@ -65,7 +65,7 @@ struct HealthPermissionDeniedView: View {
 
     private func openHealthPrivacySettings() {
 #if os(macOS)
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Health") {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
             openURL(url)
         }
 #elseif canImport(UIKit)

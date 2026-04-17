@@ -26,12 +26,31 @@ struct HealthSleepCard: View {
     /// Fractions are normalized to reflect typical proportions.
     /// A detailed sleep stage query (HKCategoryValueSleepAnalysis) would be required
     /// to replace these with real per-stage values.
-    private let stages: [SleepStage] = [
-        SleepStage(label: "Deep",  duration: "1h 45m", color: .accentPrimary,  fraction: 0.25),
-        SleepStage(label: "Light", duration: "3h 12m", color: .accentLight,    fraction: 0.46),
-        SleepStage(label: "REM",   duration: "1h 28m", color: .accentLavender, fraction: 0.20),
-        SleepStage(label: "Awake", duration: "18m",    color: .textDim,        fraction: 0.09),
-    ]
+    private var stages: [SleepStage] {
+        let fractionData: [(label: String, color: Color, fraction: Double)] = [
+            ("Deep",  .accentPrimary,  0.25),
+            ("Light", .accentLight,    0.46),
+            ("REM",   .accentLavender, 0.20),
+            ("Awake", .textDim,        0.09),
+        ]
+
+        return fractionData.map { data in
+            let stageDuration = snapshot.sleepDuration * data.fraction
+            let durationString = formatDuration(stageDuration)
+            return SleepStage(label: data.label, duration: durationString, color: data.color, fraction: data.fraction)
+        }
+    }
+
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let totalMinutes = Int(duration / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {

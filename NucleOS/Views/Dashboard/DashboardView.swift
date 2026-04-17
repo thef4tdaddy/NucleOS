@@ -30,9 +30,13 @@ struct DashboardView: View {
                 .padding(.horizontal, 32)
                 .padding(.top, 32)
 
-                // Health strip — live data when authorized, mock as fallback
-                HealthStripView(snapshot: healthViewModel.snapshot ?? MockData.healthSnapshot)
-                    .padding(.horizontal, 32)
+                // Health strip — live data when authorized, mock for previews/notDetermined only
+                HealthStripView(
+                    snapshot: healthViewModel.snapshot ?? (
+                        healthViewModel.permissionState == .notDetermined ? MockData.healthSnapshot : nil
+                    )
+                )
+                .padding(.horizontal, 32)
 
                 // 4-column stat row
                 StatsRowView()
