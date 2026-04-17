@@ -41,7 +41,7 @@ enum RemindersServiceError: LocalizedError {
 /// Concrete implementation that integrates with EventKit Reminders.
 @MainActor
 class RemindersService: RemindersServiceProtocol {
-    private let eventStore = EKEventStore()
+    private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
 
     func fetchTasks() async throws -> [NucleTask] {
