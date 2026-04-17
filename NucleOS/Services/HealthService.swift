@@ -98,7 +98,9 @@ class HealthService: HealthServiceProtocol {
     // MARK: - Error mapping
 
     /// Converts an `HKError` to the appropriate `HealthServiceError`.
-    /// Authorization-denied codes map to `.unauthorized`; everything else maps to `.queryFailed`.
+    /// Maps an Error originating from HealthKit to the corresponding `HealthServiceError`.
+    /// - Parameter error: The error produced by a HealthKit operation.
+    /// - Returns: A `HealthServiceError` representing the provided error — `.unauthorized` for authorization-related `HKError` codes, otherwise `.queryFailed` wrapping the original error.
     private func mapHKError(_ error: Error) -> HealthServiceError {
         if let hkError = error as? HKError {
             switch hkError.code {
@@ -111,7 +113,12 @@ class HealthService: HealthServiceProtocol {
         return .queryFailed(error)
     }
 
-    // MARK: - Authorization
+    /// Requests read-only authorization for the service's configured HealthKit data types.
+    /// 
+    /// Attempts to obtain read access to the static set of health types defined by the service.
+    /// - Throws: `HealthServiceError.unavailable` if Health data is not available on the device.
+    /// - Throws: `HealthServiceError.unauthorized` if the user has denied read access (mapped from `HKError.errorAuthorizationDenied`/`errorAuthorizationNotDetermined`).
+    /// - Throws: `HealthServiceError.queryFailed(_)` for other underlying HealthKit errors.
 
     func requestAuthorization() async throws {
         guard HKHealthStore.isHealthDataAvailable() else {
@@ -130,7 +137,12 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Steps
 
-    /// Returns the total step count for today (midnight → now).
+    /// Fetches the cumulative step count recorded since the start of today from HealthKit.
+    /// - Returns: The total number of steps since the start of today, rounded to the nearest integer.
+    /// - Throws: `HealthServiceError.unavailable` if HealthKit or the step count type is not available.
+    /// - Throws: `HealthServiceError.noData` if no cumulative step data is available for today.
+    /// - Throws: `HealthServiceError.unauthorized` if access to step data is denied.
+    /// - Throws: `HealthServiceError.queryFailed(_:)` if an underlying HealthKit query fails.
     func fetchSteps() async throws -> Int {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
@@ -167,7 +179,9 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Heart Rate
 
-    /// Returns the average heart rate over the past 24 hours, in BPM.
+    /// Fetches the most recent heart rate measurement from HealthKit taken within the last 24 hours.
+    /// - Returns: The most recent heart rate in beats per minute.
+    /// - Throws: `HealthServiceError.unavailable` if HealthKit or the heart rate quantity type is unavailable; `HealthServiceError.noData` if no samples are found; `HealthServiceError.queryFailed(_)` if the underlying HealthKit query fails.
     func fetchHeartRate() async throws -> Double {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
@@ -178,22 +192,24 @@ class HealthService: HealthServiceProtocol {
 
         let (start, end) = Date.last24HoursRange()
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
         return try await withCheckedThrowingContinuation { continuation in
-            let query = HKStatisticsQuery(
-                quantityType: type,
-                quantitySamplePredicate: predicate,
-                options: .discreteAverage
-            ) { _, result, error in
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: 1,
+                sortDescriptors: [sortDescriptor]
+            ) { _, samples, error in
                 if let error = error {
                     continuation.resume(throwing: self.mapHKError(error))
                     return
                 }
-                guard let average = result?.averageQuantity() else {
+                guard let sample = samples?.first as? HKQuantitySample else {
                     continuation.resume(throwing: HealthServiceError.noData)
                     return
                 }
-                let bpm = average.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                 continuation.resume(returning: bpm)
             }
             store.execute(query)
@@ -205,7 +221,14 @@ class HealthService: HealthServiceProtocol {
     /// Returns the total time asleep last night (yesterday 6 PM → today 10 AM), in seconds.
     ///
     /// Only `asleep*` categories are summed; `inBed` samples are excluded so the
-    /// result reflects actual sleep rather than time spent in bed.
+    /// Calculates the total time spent asleep during last night.
+    /// 
+    /// Aggregates sleep analysis samples from the last-night time window and returns the summed duration of asleep states.
+    /// - Returns: Total time asleep in seconds as a `TimeInterval`.
+    /// - Throws:
+    ///   - `HealthServiceError.unavailable` if HealthKit is not available or the sleep analysis type cannot be retrieved.
+    ///   - `HealthServiceError.noData` if no sleep samples are found for the requested range.
+    ///   - `HealthServiceError.unauthorized` or `HealthServiceError.queryFailed(Error)` when the underlying HealthKit query fails or access is denied.
     func fetchSleep() async throws -> TimeInterval {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
@@ -215,7 +238,7 @@ class HealthService: HealthServiceProtocol {
         }
 
         let (start, end) = Date.lastNightRange()
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -244,16 +267,10 @@ class HealthService: HealthServiceProtocol {
                     HKCategoryValueSleepAnalysis.asleepREM.rawValue,
                 ]
 
-                // Clip each sample interval by intersecting with the query range
                 let total = categorySamples.reduce(0.0) { acc, sample in
-                    guard asleepValues.contains(sample.value) else { return acc }
-
-                    // Clip sample start/end to the query window
-                    let clippedStart = max(sample.startDate, start)
-                    let clippedEnd = min(sample.endDate, end)
-
-                    guard clippedStart < clippedEnd else { return acc }
-                    return acc + clippedEnd.timeIntervalSince(clippedStart)
+                    asleepValues.contains(sample.value)
+                        ? acc + sample.endDate.timeIntervalSince(sample.startDate)
+                        : acc
                 }
 
                 continuation.resume(returning: total)
@@ -264,7 +281,12 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Calories
 
-    /// Returns the total active energy burned today (midnight → now), in kilocalories.
+    /// Fetches the cumulative active energy burned for today in kilocalories.
+    /// - Returns: The total active energy burned today, expressed in kilocalories.
+    /// - Throws:
+    ///   - `HealthServiceError.unavailable` if HealthKit is not available or the required quantity type is missing.
+    ///   - `HealthServiceError.noData` if no cumulative energy data is available for today.
+    ///   - `HealthServiceError.queryFailed(let error)` if an underlying HealthKit query fails; the associated `error` provides details.
     func fetchCalories() async throws -> Double {
         guard HKHealthStore.isHealthDataAvailable() else {
             throw HealthServiceError.unavailable
@@ -301,50 +323,21 @@ class HealthService: HealthServiceProtocol {
 
     // MARK: - Snapshot
 
-    /// Fetches all four metrics concurrently and returns a single `HealthSnapshot`.
-    /// If all four fail, propagates a meaningful error. If at least one succeeds,
-    /// constructs HealthSnapshot from successful values (zeroes for failed metrics).
+    /// Fetches all supported health metrics concurrently and returns a consolidated snapshot.
+    ///
+    — Performs steps, heart rate, sleep duration, and active calories fetches in parallel; if any individual fetch fails, that metric is set to `0` in the returned snapshot.
+    /// - Returns: A `HealthSnapshot` containing `steps`, `heartRate`, `sleepDuration`, and `activeCalories`, where each metric is the fetched value or `0` if its fetch failed.
     func fetchSnapshot() async throws -> HealthSnapshot {
-        // Capture results with error handling
-        let stepsResult = await Result { try await fetchSteps() }
-        let hrResult = await Result { try await fetchHeartRate() }
-        let sleepResult = await Result { try await fetchSleep() }
-        let caloriesResult = await Result { try await fetchCalories() }
+        async let steps = fetchSteps()
+        async let hr = fetchHeartRate()
+        async let sleep = fetchSleep()
+        async let calories = fetchCalories()
 
-        // Extract values or nil
-        let stepsValue = try? stepsResult.get()
-        let hrValue = try? hrResult.get()
-        let sleepValue = try? sleepResult.get()
-        let caloriesValue = try? caloriesResult.get()
-
-        // If all four failed, propagate the dominant error
-        if stepsValue == nil && hrValue == nil && sleepValue == nil && caloriesValue == nil {
-            // Count error types to determine dominant failure
-            let errors = [stepsResult, hrResult, sleepResult, caloriesResult].compactMap { result -> HealthServiceError? in
-                if case .failure(let error) = result {
-                    return error as? HealthServiceError
-                }
-                return nil
-            }
-
-            // Prioritize: unauthorized > noData > queryFailed > unavailable
-            if errors.contains(where: { if case .unauthorized = $0 { return true }; return false }) {
-                throw HealthServiceError.unauthorized
-            } else if errors.contains(where: { if case .noData = $0 { return true }; return false }) {
-                throw HealthServiceError.noData
-            } else if let firstQueryError = errors.first(where: { if case .queryFailed = $0 { return true }; return false }) {
-                throw firstQueryError
-            } else {
-                throw HealthServiceError.unavailable
-            }
-        }
-
-        // At least one metric succeeded — construct snapshot with available data
         return HealthSnapshot(
-            steps: stepsValue ?? 0,
-            heartRate: hrValue ?? 0,
-            sleepDuration: sleepValue ?? 0,
-            activeCalories: caloriesValue ?? 0
+            steps: (try? await steps) ?? 0,
+            heartRate: (try? await hr) ?? 0,
+            sleepDuration: (try? await sleep) ?? 0,
+            activeCalories: (try? await calories) ?? 0
         )
     }
 }
@@ -353,12 +346,30 @@ class HealthService: HealthServiceProtocol {
 
 /// Fallback `HealthService` for platforms where HealthKit is unavailable at compile time.
 class HealthService: HealthServiceProtocol {
-    func requestAuthorization() async throws { throw HealthServiceError.unavailable }
-    func fetchSteps() async throws -> Int { throw HealthServiceError.unavailable }
-    func fetchHeartRate() async throws -> Double { throw HealthServiceError.unavailable }
-    func fetchSleep() async throws -> TimeInterval { throw HealthServiceError.unavailable }
-    func fetchCalories() async throws -> Double { throw HealthServiceError.unavailable }
-    func fetchSnapshot() async throws -> HealthSnapshot { throw HealthServiceError.unavailable }
+    /// Requests authorization to read health data from HealthKit.
+/// - Throws: `HealthServiceError.unavailable` if HealthKit is not available on the current platform.
+func requestAuthorization() async throws { throw HealthServiceError.unavailable }
+    /// Fetches the total number of steps recorded since the start of today.
+/// - Returns: The total step count for the current day.
+/// - Throws: `HealthServiceError.unavailable` when the Health service (HealthKit) is not available or cannot provide step data.
+func fetchSteps() async throws -> Int { throw HealthServiceError.unavailable }
+    /// Fetches the most recent heart rate measured within the last 24 hours, expressed in beats per minute.
+/// - Returns: The heart rate in beats per minute (BPM).
+/// - Throws: `HealthServiceError.unavailable` if health data is not available on the current platform.
+func fetchHeartRate() async throws -> Double { throw HealthServiceError.unavailable }
+    /// Calculates the total duration classified as asleep for the device's last night sleep window.
+/// Aggregates sleep samples that represent asleep states and returns their combined duration.
+/// - Returns: Total sleep duration (in seconds) for the last night.
+/// - Throws: `HealthServiceError.unavailable` if HealthKit is not available on the current platform.
+func fetchSleep() async throws -> TimeInterval { throw HealthServiceError.unavailable }
+    /// Fetches the device's active energy burned for today in kilocalories.
+/// - Returns: The total active energy burned today, in kilocalories.
+/// - Throws: `HealthServiceError.unavailable` if HealthKit is not available on the current platform.
+func fetchCalories() async throws -> Double { throw HealthServiceError.unavailable }
+    /// Provides a snapshot of key health metrics (steps, most recent heart rate, sleep duration, and calories burned).
+/// - Returns: A `HealthSnapshot` containing step count, heart rate in beats per minute, sleep time in seconds, and calories in kilocalories.
+/// - Throws: `HealthServiceError.unavailable` when HealthKit is not available on the current platform.
+func fetchSnapshot() async throws -> HealthSnapshot { throw HealthServiceError.unavailable }
 }
 
 #endif
@@ -368,10 +379,15 @@ class HealthService: HealthServiceProtocol {
 /// Mock implementation backed by `MockData` for SwiftUI previews and testing.
 class MockHealthService: HealthServiceProtocol {
 
+    /// Treats health authorization as granted for the mock service.
+    /// 
+    /// No operation; used in tests and previews to simulate a granted HealthKit authorization.
     func requestAuthorization() async throws {
         // No-op for mock — authorization is always considered granted.
     }
 
+    /// Provides the mocked step count for the current day.
+    /// - Returns: The step count from the mock health snapshot as an `Int`.
     func fetchSteps() async throws -> Int {
         return MockData.healthSnapshot.steps
     }
@@ -384,10 +400,14 @@ class MockHealthService: HealthServiceProtocol {
         return MockData.healthSnapshot.sleepDuration
     }
 
+    /// Provides the mock active energy burned value.
+    /// - Returns: The mock active energy burned in kilocalories.
     func fetchCalories() async throws -> Double {
         return MockData.healthSnapshot.activeCalories
     }
 
+    /// Provide a predefined health data snapshot for previews and tests.
+    /// - Returns: A `HealthSnapshot` populated with mock values from `MockData.healthSnapshot`.
     func fetchSnapshot() async throws -> HealthSnapshot {
         return MockData.healthSnapshot
     }

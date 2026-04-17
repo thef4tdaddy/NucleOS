@@ -63,9 +63,15 @@ struct HealthPermissionDeniedView: View {
         }
     }
 
+    /// Opens the system Health privacy settings when possible.
+    /// 
+    /// On macOS this attempts to open System Preferences' Privacy → Health pane using the
+    /// `x-apple.systempreferences:` URL. On iOS/tvOS this attempts to open the app's Settings
+    /// using `UIApplication.openSettingsURLString`. If a valid URL cannot be constructed,
+    /// no action is taken.
     private func openHealthPrivacySettings() {
 #if os(macOS)
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Health") {
             openURL(url)
         }
 #elseif canImport(UIKit)

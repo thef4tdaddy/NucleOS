@@ -15,7 +15,6 @@ final class HealthViewModel: ObservableObject {
     @Published private(set) var permissionState: HealthPermissionState = .notDetermined
     @Published private(set) var snapshot: HealthSnapshot?
     @Published private(set) var isLoading: Bool = false
-    @Published private(set) var lastError: Error?
 
     private let service: HealthServiceProtocol
     private let authService: HealthKitAuthorizationServiceProtocol
@@ -43,7 +42,12 @@ final class HealthViewModel: ObservableObject {
     // MARK: - Permission Evaluation
 
     /// Checks the current HealthKit authorization state via `statusForAuthorizationRequest`
-    /// (no system prompt is shown) and fetches data if already authorized.
+    /// Evaluates current HealthKit authorization and updates the view model's published state accordingly.
+    /// 
+    /// Checks whether health data is available; if not, sets `permissionState` to `.unavailable`. If available,
+    /// determines the authorization status and updates `permissionState` to one of `.authorized`, `.notDetermined`,
+    /// `.denied`, or `.unavailable`. When authorization is `.denied` the stored `snapshot` is cleared. When
+    /// authorization is `.authorized` the view model begins fetching a fresh `HealthSnapshot`.
     func evaluatePermissionState() async {
         guard authService.isHealthDataAvailable else {
             permissionState = .unavailable
@@ -69,7 +73,14 @@ final class HealthViewModel: ObservableObject {
 
     /// Requests HealthKit authorization via the injected auth service.
     /// On first launch this shows the system permission prompt; subsequent calls are
-    /// no-ops from the user's perspective. On success, fetches health data immediately.
+    /// Requests HealthKit authorization and updates the view model's permission state and snapshot accordingly.
+    /// 
+    /// On authorization success:
+    /// - `.authorized`: sets `permissionState` to `.authorized` and triggers a data fetch.
+    /// - `.denied`: sets `permissionState` to `.denied` and clears `snapshot`.
+    /// - `.notDetermined`: sets `permissionState` to `.notDetermined`.
+    /// - `.unavailable`: sets `permissionState` to `.unavailable`.
+    /// If `HealthKitAuthorizationError.healthDataUnavailable` is thrown, sets `permissionState` to `.unavailable` and clears `snapshot`. For any other thrown error, sets `permissionState` to `.denied` and clears `snapshot`.
     func requestAuthorization() async {
         do {
             let status = try await authService.requestAuthorization()
@@ -98,7 +109,9 @@ final class HealthViewModel: ObservableObject {
 
     /// Fetches a fresh `HealthSnapshot` from the service and publishes it.
     /// Transitions `permissionState` to `.empty` or `.denied` on the matching errors and
-    /// clears any previously cached snapshot so stale data is not shown.
+    /// Fetches the latest health snapshot and publishes it to `snapshot`, while managing loading and permission state.
+    /// 
+    /// On success, updates `snapshot` with the fetched `HealthSnapshot`. If `HealthServiceError.noData` occurs, clears `snapshot` and sets `permissionState` to `.empty`. If `HealthServiceError.unauthorized` occurs, clears `snapshot` and sets `permissionState` to `.denied`. For any other error, leaves `permissionState` and `snapshot` unchanged. While the operation runs, `isLoading` is set to `true` and is cleared when the method completes.
     func fetchData() async {
         isLoading = true
         defer { isLoading = false }
@@ -106,19 +119,14 @@ final class HealthViewModel: ObservableObject {
         do {
             let fetched = try await service.fetchSnapshot()
             snapshot = fetched
-            lastError = nil
         } catch HealthServiceError.noData {
             snapshot = nil
             permissionState = .empty
-            lastError = nil
         } catch HealthServiceError.unauthorized {
             snapshot = nil
             permissionState = .denied
-            lastError = nil
         } catch {
-            // Unexpected error — log and set lastError
-            print("⚠️ HealthViewModel.fetchData: Unexpected error: \(error)")
-            lastError = error
+            // Transient or unavailable error — leave permissionState and snapshot unchanged.
         }
     }
 }

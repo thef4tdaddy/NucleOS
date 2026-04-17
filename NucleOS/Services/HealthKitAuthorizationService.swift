@@ -106,6 +106,11 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
         HKHealthStore.isHealthDataAvailable()
     }
 
+    /// Checks the current HealthKit authorization state for the app's required read types.
+    /// - Returns: A `HealthKitAuthorizationStatus` describing the current state:
+    ///   - `.unavailable` when HealthKit is not available on the device.
+    ///   - `.authorized` when HealthKit reports the authorization prompt has already been handled for the requested read types.
+    ///   - `.notDetermined` when the authorization prompt has not been shown or the status is unknown.
     func checkAuthorizationStatus() async -> HealthKitAuthorizationStatus {
         guard isHealthDataAvailable else { return .unavailable }
         guard let status = try? await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes) else {
@@ -126,6 +131,9 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
         }
     }
 
+    /// Requests read authorization for the app's required HealthKit data and returns the unified authorization status after the request.
+    /// - Returns: A `HealthKitAuthorizationStatus` representing the post-request outcome: `.authorized` when access is granted or the system treated the prompt as already processed, or `.notDetermined` when the system still expects a prompt.
+    /// - Throws: `HealthKitAuthorizationError.healthDataUnavailable` if HealthKit is not available on the device; `HealthKitAuthorizationError.authorizationDenied` if the authorization prompt was prevented (system/MDM) or the post-request status indicates denial.
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
         guard isHealthDataAvailable else {
             throw HealthKitAuthorizationError.healthDataUnavailable
@@ -140,21 +148,16 @@ final class HealthKitAuthorizationService: @unchecked Sendable, HealthKitAuthori
 
         // Verify the post-request status. HealthKit hides read-access denials for privacy,
         // so `.unnecessary` means the system processed the prompt — treat as authorized.
-        do {
-            let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
-            switch requestStatus {
-            case .unnecessary:
-                return .authorized
-            case .shouldRequest:
-                return .notDetermined
-            case .unknown:
-                throw HealthKitAuthorizationError.authorizationDenied
-            @unknown default:
-                return .notDetermined
-            }
-        } catch {
-            // Any error during status check is treated as authorization denied
+        let requestStatus = try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
+        switch requestStatus {
+        case .unnecessary:
+            return .authorized
+        case .shouldRequest:
+            return .notDetermined
+        case .unknown:
             throw HealthKitAuthorizationError.authorizationDenied
+        @unknown default:
+            return .notDetermined
         }
     }
 }
@@ -182,10 +185,14 @@ final class MockHealthKitAuthorizationService: HealthKitAuthorizationServiceProt
         self.requestAuthorizationResult = requestAuthorizationResult
     }
 
+    /// Provides the mock's configured HealthKit authorization status for status checks.
+    /// - Returns: The `HealthKitAuthorizationStatus` value currently stored in `checkStatusResult`.
     func checkAuthorizationStatus() async -> HealthKitAuthorizationStatus {
         return checkStatusResult
     }
 
+    /// Provide the preconfigured authorization result for a simulated authorization request.
+    /// - Returns: The `HealthKitAuthorizationStatus` value configured on the mock that represents the outcome of requesting HealthKit authorization.
     func requestAuthorization() async throws -> HealthKitAuthorizationStatus {
         return requestAuthorizationResult
     }
