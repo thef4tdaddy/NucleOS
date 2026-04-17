@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Full-page view that displays upcoming calendar events, grouped by day.
 struct CalendarView: View {
     @State private var events: [NucleEvent] = []
     @State private var isLoading = false
@@ -113,6 +114,7 @@ struct CalendarView: View {
         }
     }
 
+    /// Events sorted and grouped by calendar day (start-of-day key).
     private var groupedEventsByDay: [(key: Date, value: [NucleEvent])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: events) { event in
@@ -121,6 +123,7 @@ struct CalendarView: View {
         return grouped.sorted { $0.key < $1.key }
     }
 
+    /// Cancels any in-flight load and starts a fresh one to prevent races.
     private func startLoadEvents() {
         // Cancel any in-flight task to prevent races
         loadTask?.cancel()
@@ -129,6 +132,7 @@ struct CalendarView: View {
         }
     }
 
+    /// Fetches events for the selected day range; falls back to mock data if permission is denied.
     private func loadEvents() async {
         isLoading = true
         error = nil
@@ -163,8 +167,11 @@ struct CalendarView: View {
     }
 }
 
+/// A labelled group of ``EventCardView`` rows for a single calendar day.
 struct DayEventsSection: View {
+    /// The calendar day this section represents (start-of-day).
     let date: Date
+    /// Events occurring on this day.
     let events: [NucleEvent]
 
     private let calendar = Calendar.current
@@ -201,6 +208,7 @@ struct DayEventsSection: View {
         }
     }
 
+    /// "Today", "Tomorrow", or the full weekday name for other dates.
     private var dayLabel: String {
         if calendar.isDateInToday(date) {
             return "Today"
@@ -213,6 +221,7 @@ struct DayEventsSection: View {
         }
     }
 
+    /// Medium-style date string (e.g. "Apr 17, 2026").
     private var dateLabel: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -220,7 +229,9 @@ struct DayEventsSection: View {
     }
 }
 
+/// A full-width card showing a single event's title, time range, and optional location.
 struct EventCardView: View {
+    /// The event to display.
     let event: NucleEvent
 
     var body: some View {
@@ -275,6 +286,7 @@ struct EventCardView: View {
         )
     }
 
+    /// Returns `"All Day"` or a short `"HH:mm – HH:mm"` string.
     private func formatTimeRange(_ start: Date, end: Date, isAllDay: Bool) -> String {
         if isAllDay {
             return "All Day"
@@ -285,6 +297,7 @@ struct EventCardView: View {
         return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
     }
 
+    /// Maps an ``EventColor`` token to a SwiftUI `Color`.
     private func colorFromEventColor(_ eventColor: EventColor) -> Color {
         switch eventColor {
         case .accentPrimary:

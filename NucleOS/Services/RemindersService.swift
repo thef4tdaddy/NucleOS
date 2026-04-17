@@ -10,19 +10,29 @@ import Foundation
 
 // MARK: - Protocol
 
+/// Declares the async interface for fetching and mutating Reminders tasks.
 protocol RemindersServiceProtocol {
+    /// Returns all reminders from every Reminders list the user owns.
     func fetchTasks() async throws -> [NucleTask]
+    /// Saves a new reminder to the default Reminders list.
     func addTask(_ task: NucleTask) async throws
+    /// Marks an existing reminder as complete.
     func completeTask(_ task: NucleTask) async throws
+    /// Permanently removes a reminder.
     func deleteTask(_ task: NucleTask) async throws
 }
 
 // MARK: - Errors
 
+/// Errors that can be thrown by ``RemindersServiceProtocol`` implementations.
 enum RemindersServiceError: LocalizedError {
+    /// Access to Reminders was not granted by the user.
     case permissionDenied
+    /// An underlying EventKit error prevented the fetch.
     case fetchFailed(Error)
+    /// EventKit's fetch callback returned `nil`, indicating an internal failure.
     case fetchReturnedNil
+    /// The requested operation has not been implemented yet.
     case unimplemented
 
     var errorDescription: String? {
@@ -47,6 +57,7 @@ class RemindersService: RemindersServiceProtocol {
     private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
 
+    /// Fetches all reminders from EventKit, requesting permission if not yet determined.
     func fetchTasks() async throws -> [NucleTask] {
         // Check and request permissions if needed
         if permissionsManager.remindersAuthStatus == .notDetermined {
@@ -79,20 +90,24 @@ class RemindersService: RemindersServiceProtocol {
         }
     }
 
+    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
     func addTask(_ task: NucleTask) async throws {
         throw RemindersServiceError.unimplemented
     }
 
+    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
     func completeTask(_ task: NucleTask) async throws {
         throw RemindersServiceError.unimplemented
     }
 
+    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
     func deleteTask(_ task: NucleTask) async throws {
         throw RemindersServiceError.unimplemented
     }
 
     // MARK: - Private Helpers
 
+    /// Converts an `EKReminder` into a ``NucleTask``, or returns `nil` if the title is missing.
     private func convertToNucleTask(from ekReminder: EKReminder) -> NucleTask? {
         guard let title = ekReminder.title, !title.isEmpty else {
             return nil
@@ -177,14 +192,17 @@ actor MockRemindersService: RemindersServiceProtocol {
         )
     ]
 
+    /// Returns the in-memory task list.
     func fetchTasks() async throws -> [NucleTask] {
         return tasks
     }
 
+    /// Appends `task` to the in-memory list.
     func addTask(_ task: NucleTask) async throws {
         tasks.append(task)
     }
 
+    /// Marks the task with the matching `id` as completed.
     func completeTask(_ task: NucleTask) async throws {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
         var updated = tasks[index]
@@ -192,6 +210,7 @@ actor MockRemindersService: RemindersServiceProtocol {
         tasks[index] = updated
     }
 
+    /// Removes the task with the matching `id` from the in-memory list.
     func deleteTask(_ task: NucleTask) async throws {
         tasks.removeAll { $0.id == task.id }
     }

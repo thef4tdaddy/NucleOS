@@ -7,22 +7,44 @@
 
 import Foundation
 
+/// A task sourced from the user's Apple Reminders, surfaced in NucleOS.
 struct NucleTask: Identifiable, Equatable, Sendable {
+    /// Stable identifier used to correlate tasks across reloads.
     let id: UUID
+    /// User-visible title of the reminder.
     var title: String
+    /// Whether the reminder has been marked complete.
     var isCompleted: Bool
+    /// The date and time the task is due, if set.
     var dueDate: Date?
+    /// The date and time the task was completed, if available from EventKit.
     var completionDate: Date?
+    /// Optional free-form notes attached to the reminder.
     var notes: String?
+    /// Relative importance of the task.
     var priority: Priority
 
-    enum Priority: Int, CaseIterable, Sendable {
+    /// Relative importance levels, mapped from RFC 5545 priority integers.
+    enum Priority: Int, CaseIterable, Hashable, Sendable {
+        /// No priority set (RFC 5545 value 0).
         case none = -1
+        /// Low importance (RFC 5545 values 6–9).
         case low = 0
+        /// Medium importance (RFC 5545 value 5).
         case medium = 1
+        /// High importance (RFC 5545 values 1–4).
         case high = 2
     }
 
+    /// Creates a new `NucleTask`.
+    /// - Parameters:
+    ///   - id: Stable identifier; defaults to a new `UUID`.
+    ///   - title: User-visible reminder title.
+    ///   - isCompleted: Whether the reminder is marked complete. Defaults to `false`.
+    ///   - dueDate: Optional due date/time.
+    ///   - completionDate: Optional date the task was completed.
+    ///   - notes: Optional free-form notes.
+    ///   - priority: Relative importance. Defaults to `.medium`.
     init(
         id: UUID = UUID(),
         title: String,

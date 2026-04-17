@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Dashboard panel that lists the user's upcoming incomplete tasks from Reminders.
 struct TasksPanelView: View {
     @State private var tasks: [NucleTask] = []
     @State private var isLoading = false
@@ -77,6 +78,7 @@ struct TasksPanelView: View {
         }
     }
 
+    /// Fetches incomplete tasks from Reminders; sets `permissionDenied` if access is not granted.
     private func loadTasks() async {
         isLoading = true
         error = nil
@@ -95,9 +97,13 @@ struct TasksPanelView: View {
     }
 }
 
+/// Full-screen prompt shown when the user has not granted Reminders or Calendar access.
 struct PermissionDeniedView: View {
+    /// SF Symbol name for the accompanying icon.
     let icon: String
+    /// Short explanation of why access is needed.
     let message: String
+    /// Action invoked when the user taps "Open System Settings".
     let action: () -> Void
 
     var body: some View {
@@ -123,7 +129,9 @@ struct PermissionDeniedView: View {
     }
 }
 
+/// A single compact task row used inside ``TasksPanelView``.
 struct TaskRow: View {
+    /// The task to display.
     let task: NucleTask
 
     var body: some View {
@@ -148,6 +156,7 @@ struct TaskRow: View {
         .padding(.vertical, 6)
     }
 
+    /// Returns a short human-readable string for `date`: time-only if today, short date otherwise.
     private func formatDueDate(_ date: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
@@ -162,7 +171,9 @@ struct TaskRow: View {
     }
 }
 
+/// Placeholder shown when a list has no items to display.
 struct EmptyStateView: View {
+    /// Short explanation of the empty state.
     let message: String
 
     var body: some View {
@@ -179,7 +190,9 @@ struct EmptyStateView: View {
     }
 }
 
+/// Placeholder shown when a data fetch encounters an error.
 struct ErrorStateView: View {
+    /// Localised error description to display.
     let message: String
 
     var body: some View {

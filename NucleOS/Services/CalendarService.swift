@@ -10,6 +10,7 @@ import Foundation
 
 // MARK: - Protocol
 
+/// Declares the async interface for fetching calendar events from EventKit.
 protocol CalendarServiceProtocol {
     /// Returns all events occurring today (midnight-to-midnight in the user's time zone).
     func fetchTodayEvents() async throws -> [NucleEvent]
@@ -20,8 +21,11 @@ protocol CalendarServiceProtocol {
 
 // MARK: - Errors
 
+/// Errors that can be thrown by ``CalendarServiceProtocol`` implementations.
 enum CalendarServiceError: LocalizedError {
+    /// Access to Calendar was not granted by the user.
     case permissionDenied
+    /// An underlying EventKit error prevented the fetch.
     case fetchFailed(Error)
 
     var errorDescription: String? {
@@ -42,6 +46,7 @@ class CalendarService: CalendarServiceProtocol {
     private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
 
+    /// Fetches all events occurring today (midnight-to-midnight in the user's time zone).
     func fetchTodayEvents() async throws -> [NucleEvent] {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
@@ -52,6 +57,7 @@ class CalendarService: CalendarServiceProtocol {
         return try await fetchEvents(from: startOfDay, to: endOfDay)
     }
 
+    /// Fetches events in the half-open range [now, now + `days`).
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
         guard days > 0 else { return [] }
 
@@ -65,6 +71,7 @@ class CalendarService: CalendarServiceProtocol {
 
     // MARK: - Private Helpers
 
+    /// Fetches EventKit events in the given date range, requesting permission if needed.
     private func fetchEvents(from startDate: Date, to endDate: Date) async throws -> [NucleEvent] {
         // Check and request permissions if needed
         if permissionsManager.calendarAuthStatus == .notDetermined {
@@ -94,6 +101,7 @@ class CalendarService: CalendarServiceProtocol {
         return ekEvents.compactMap { convertToNucleEvent(from: $0) }
     }
 
+    /// Converts an `EKEvent` into a ``NucleEvent``, or returns `nil` if the title is missing.
     private func convertToNucleEvent(from ekEvent: EKEvent) -> NucleEvent? {
         guard let title = ekEvent.title, !title.isEmpty else {
             return nil
@@ -118,6 +126,8 @@ class CalendarService: CalendarServiceProtocol {
         )
     }
 
+    /// Converts a `CGColor` to a lowercase hex string, converting to sRGB first.
+    /// Falls back to the accent-primary hex (`5b3fd4`) if conversion fails.
     private func cgColorToHex(_ cgColor: CGColor) -> String {
         let rgbColor = cgColor.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil) ?? cgColor
         guard let components = rgbColor.components, components.count >= 3 else {
@@ -137,6 +147,7 @@ class CalendarService: CalendarServiceProtocol {
 /// Mock implementation with realistic hardcoded data for SwiftUI previews and testing.
 class MockCalendarService: CalendarServiceProtocol {
 
+    /// Returns hardcoded events for today, suitable for previews and tests.
     func fetchTodayEvents() async throws -> [NucleEvent] {
         let today = Date()
         return [
@@ -184,6 +195,7 @@ class MockCalendarService: CalendarServiceProtocol {
 
     private let calendar = Calendar.current
 
+    /// Generates sample events for the given `date`, cycling through three patterns based on `offset`.
     private func upcomingEvents(for date: Date, offset: Int) -> [NucleEvent] {
         switch offset % 3 {
         case 0:

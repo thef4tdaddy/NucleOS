@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Dashboard panel that lists today's calendar events from EventKit.
 struct CalendarPanelView: View {
     @State private var events: [NucleEvent] = []
     @State private var isLoading = false
@@ -77,6 +78,7 @@ struct CalendarPanelView: View {
         }
     }
 
+    /// Fetches today's events from Calendar; sets `permissionDenied` if access is not granted.
     private func loadEvents() async {
         isLoading = true
         error = nil
@@ -94,7 +96,9 @@ struct CalendarPanelView: View {
     }
 }
 
+/// A single compact event row used inside ``CalendarPanelView``.
 struct EventRow: View {
+    /// The event to display.
     let event: NucleEvent
 
     var body: some View {
@@ -119,6 +123,7 @@ struct EventRow: View {
         .padding(.vertical, 4)
     }
 
+    /// Returns `"All Day"` for all-day events, or a short time string for timed events.
     private func formatTime(_ date: Date, isAllDay: Bool) -> String {
         if isAllDay {
             return "All Day"
@@ -129,6 +134,7 @@ struct EventRow: View {
         return formatter.string(from: date)
     }
 
+    /// Maps an ``EventColor`` token to a SwiftUI `Color`.
     private func colorFromEventColor(_ eventColor: EventColor) -> Color {
         switch eventColor {
         case .accentPrimary:

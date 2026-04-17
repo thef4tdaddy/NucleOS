@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Full-page view that displays all Reminders tasks, grouped into incomplete and completed sections.
 struct TasksView: View {
     @State private var tasks: [NucleTask] = []
     @State private var isLoading = false
@@ -140,14 +141,18 @@ struct TasksView: View {
         }
     }
 
+    /// Tasks that have not yet been marked complete.
     private var incompleteTasks: [NucleTask] {
         tasks.filter { !$0.isCompleted }
     }
 
+    /// Tasks that have been marked complete.
     private var completedTasks: [NucleTask] {
         tasks.filter { $0.isCompleted }
     }
 
+    /// Fetches all tasks from Reminders; sets `permissionDenied` if access is not granted.
+    /// Cancels any in-progress load before starting.
     private func loadTasks() async {
         // Early exit if task was cancelled
         guard !Task.isCancelled else { return }
@@ -169,9 +174,13 @@ struct TasksView: View {
     }
 }
 
+/// A titled section of ``TaskCardView`` rows with an icon label.
 struct TasksSection: View {
+    /// Section heading (uppercased before display).
     let title: String
+    /// Tasks to render.
     let tasks: [NucleTask]
+    /// SF Symbol name shown next to the section title.
     let icon: String
 
     var body: some View {
@@ -198,7 +207,9 @@ struct TasksSection: View {
     }
 }
 
+/// A full-width card displaying a single task's title, due date, and priority badge.
 struct TaskCardView: View {
+    /// The task to display.
     let task: NucleTask
 
     var body: some View {
@@ -253,6 +264,7 @@ struct TaskCardView: View {
         )
     }
 
+    /// Returns a relative date label ("Today", "Tomorrow", "Yesterday") or a medium-style date string.
     private func formatDueDate(_ date: Date) -> String {
         let calendar = Calendar.current
 
@@ -269,6 +281,7 @@ struct TaskCardView: View {
         }
     }
 
+    /// Returns `true` if `date` is in the past and the task is not yet complete.
     private func isOverdue(_ date: Date) -> Bool {
         return date < Date() && !task.isCompleted
     }

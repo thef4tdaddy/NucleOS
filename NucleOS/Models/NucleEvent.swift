@@ -35,15 +35,32 @@ enum EventColor: Sendable, Equatable {
 
 // MARK: - NucleEvent
 
+/// A calendar event sourced from the user's Apple Calendar via EventKit.
 struct NucleEvent: Identifiable, Equatable, Sendable {
+    /// Stable identifier used to correlate events across reloads.
     let id: UUID
+    /// User-visible title of the event.
     var title: String
+    /// The date and time the event begins.
     var startDate: Date
+    /// The date and time the event ends.
     var endDate: Date
+    /// The colour token of the source calendar.
     var calendarColor: EventColor
+    /// Whether the event spans the entire day.
     var isAllDay: Bool
+    /// Optional location string attached to the event.
     var location: String?
 
+    /// Creates a new `NucleEvent`.
+    /// - Parameters:
+    ///   - id: Stable identifier; defaults to a new `UUID`.
+    ///   - title: User-visible event title.
+    ///   - startDate: Event start date/time.
+    ///   - endDate: Event end date/time.
+    ///   - calendarColor: Color token of the source calendar. Defaults to `.accentPrimary`.
+    ///   - isAllDay: Whether the event spans the full day. Defaults to `false`.
+    ///   - location: Optional location string.
     init(
         id: UUID = UUID(),
         title: String,

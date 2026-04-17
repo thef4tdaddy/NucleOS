@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Horizontal row of four ``StatCard`` views populated from live Reminders and Calendar data.
 struct StatsRowView: View {
     @State private var tasksToday = 0
     @State private var completedToday = 0
@@ -44,6 +45,7 @@ struct StatsRowView: View {
         }
     }
 
+    /// Fetches tasks and events concurrently and updates the four stat counters.
     private func loadStats() async {
         // Load tasks
         do {
@@ -77,6 +79,7 @@ struct StatsRowView: View {
         }
     }
 
+    /// Returns `true` if `date` falls within the same ISO week as today.
     private func isInCurrentWeek(_ date: Date?) -> Bool {
         guard let date = date else { return false }
         let calendar = Calendar.current
@@ -84,9 +87,13 @@ struct StatsRowView: View {
     }
 }
 
+/// A single labelled metric card used inside ``StatsRowView``.
 struct StatCard: View {
+    /// Short label displayed above the value.
     let label: String
+    /// Primary numeric or text value.
     let value: String
+    /// Contextual subtitle displayed below the value.
     let subtitle: String
 
     var body: some View {
