@@ -4,6 +4,25 @@
 //
 //  Data model representing a point-in-time snapshot of health metrics
 //
+//  AI PRIVACY BOUNDARY
+//  ===================
+//  `HealthSnapshot` is the single, well-defined boundary between HealthKit data and
+//  every other system in NucleOS — including the AI layer.
+//
+//  Rules that MUST be enforced at this boundary:
+//  • Only aggregate metrics cross this boundary (daily totals and averages).
+//    Raw `HKSample`, `HKQuantitySample`, or `HKCategorySample` objects must NEVER
+//    be passed to an `LLMProvider` or any other non-HealthKit service.
+//  • Heart rate variability (HRV), blood oxygen (SpO₂), and any clinical/diagnostic
+//    data are explicitly excluded from this struct and must never be added to it for
+//    use in AI prompts.
+//  • No population comparison data (e.g. "low for your age group") may be derived
+//    from this struct and included in AI context.
+//  • User must have explicitly opted in before a `HealthSnapshot` value is passed
+//    to any `LLMProvider` implementation (see `HealthSummaryPromptBuilder`).
+//  • On-device AI (MLX + Phi-3 mini) is preferred; a user-provided API key is
+//    required before any cloud provider receives a snapshot.
+//
 
 import Foundation
 

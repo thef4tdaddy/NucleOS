@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct DashboardView: View {
+    @StateObject private var healthViewModel = HealthViewModel()
+
     var body: some View {
         ScrollView(content: {
             VStack(spacing: 24) {
@@ -28,9 +30,13 @@ struct DashboardView: View {
                 .padding(.horizontal, 32)
                 .padding(.top, 32)
 
-                // Health strip
-                HealthStripView()
-                    .padding(.horizontal, 32)
+                // Health strip — live data when authorized, mock for previews/notDetermined only
+                HealthStripView(
+                    snapshot: healthViewModel.snapshot ?? (
+                        healthViewModel.permissionState == .notDetermined ? MockData.healthSnapshot : nil
+                    )
+                )
+                .padding(.horizontal, 32)
 
                 // 4-column stat row
                 StatsRowView()
@@ -50,6 +56,9 @@ struct DashboardView: View {
             }
         })
         .background(Color.backgroundPrimary)
+        .task {
+            await healthViewModel.evaluatePermissionState()
+        }
     }
 }
 
