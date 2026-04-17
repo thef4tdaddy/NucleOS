@@ -2,61 +2,126 @@
 //  HealthView.swift
 //  NucleOS
 //
-//  Full-page health section with metric cards and summary layouts
+//  Main Health section view — switches between permission states and live data.
 //
 
 import SwiftUI
 
-// MARK: - Main View
-
 struct HealthView: View {
+    @StateObject private var viewModel = HealthViewModel()
     private let snapshot = MockData.healthSnapshot
 
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                HealthPageHeader()
-                    .padding(.horizontal, 32)
-                    .padding(.top, 32)
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Health")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.textPrimary)
 
-                HealthStripView(snapshot: snapshot)
+                        Text("Your daily metrics")
+                            .font(.system(size: 14))
+                            .foregroundColor(.textSecondary)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+
+                // State-driven content
+                contentView
                     .padding(.horizontal, 32)
 
-                HealthDetailGridView(snapshot: snapshot)
-                    .padding(.horizontal, 32)
-
-                HealthActivityView(snapshot: snapshot)
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 32)
+                Spacer(minLength: 32)
             }
         }
         .background(Color.backgroundPrimary)
+        .onAppear { viewModel.evaluatePermissionState() }
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var contentView: some View {
+        switch viewModel.permissionState {
+        case .notDetermined:
+            HealthRequestPermissionView {
+                Task { await viewModel.requestAuthorization() }
+            }
+        case .unavailable:
+            HealthUnavailableView()
+        case .denied:
+            HealthPermissionDeniedView()
+        case .empty:
+            HealthEmptyStateView()
+        case .authorized:
+            VStack(spacing: 24) {
+                HealthStripView()
+                HealthDetailGridView(snapshot: snapshot)
+                HealthActivityView(snapshot: snapshot)
+            }
+        }
     }
 }
 
-// MARK: - Page Header
+// MARK: - Request Permission View
 
-private struct HealthPageHeader: View {
+/// Shown when authorization has not yet been requested.
+private struct HealthRequestPermissionView: View {
+    let onRequest: () -> Void
+
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Health")
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundColor(.textPrimary)
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentLavender.opacity(0.12))
+                    .frame(width: 72, height: 72)
 
-                HStack(spacing: 6) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.accentLavender)
-
-                    Text("Synced from Apple Health")
-                        .font(.system(size: 13))
-                        .foregroundColor(.textSecondary)
-                }
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 32, weight: .regular))
+                    .foregroundColor(.accentLavender)
             }
 
-            Spacer()
+            VStack(spacing: 8) {
+                Text("Connect to Health")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+                    .multilineTextAlignment(.center)
+
+                Text("Grant access to your health data so NucleOS can display your steps, heart rate, sleep, and calories.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+
+            Button(action: onRequest) {
+                Label("Authorize Health Access", systemImage: "heart.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.textPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentPrimary)
+                    )
+            }
+            .buttonStyle(.plain)
         }
+        .frame(maxWidth: 380)
+        .padding(40)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.backgroundCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.border, lineWidth: 1)
+                )
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -229,6 +294,21 @@ private struct MetricProgressBar: View {
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Unavailable") {
     HealthView()
+        .frame(width: 900, height: 600)
+}
+
+#Preview("Denied — isolated") {
+    HealthPermissionDeniedView()
+        .frame(width: 900, height: 600)
+        .background(Color.backgroundPrimary)
+}
+
+#Preview("Empty — isolated") {
+    HealthEmptyStateView()
+        .frame(width: 900, height: 600)
+        .background(Color.backgroundPrimary)
 }

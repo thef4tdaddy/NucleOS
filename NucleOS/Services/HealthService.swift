@@ -10,6 +10,22 @@ import Foundation
 import HealthKit
 #endif
 
+// MARK: - Permission State
+
+/// Represents the possible HealthKit authorization states for the UI.
+enum HealthPermissionState: Equatable {
+    /// Authorization has not been requested yet.
+    case notDetermined
+    /// HealthKit is unavailable on this device or OS version.
+    case unavailable
+    /// The user has denied or restricted access.
+    case denied
+    /// Access is authorized but no health data exists yet.
+    case empty
+    /// Access is authorized and data is available.
+    case authorized
+}
+
 // MARK: - Protocol
 
 protocol HealthServiceProtocol {
