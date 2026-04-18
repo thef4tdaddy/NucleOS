@@ -90,15 +90,17 @@ struct MLXProviderTests {
 
     // MARK: - Protocol conformance
 
-    @Test("MLXProvider can be used as any LLMProvider")
+    @Test("MLXProvider can be used as any LLMProvider without type error")
     func conformsToProtocol() {
+        // Verify that MLXProvider is assignable to `any LLMProvider`.
+        // If this compiles and runs, the conformance is correct.
         let provider: any LLMProvider = MLXProvider()
-        #expect(!provider.name.isEmpty)
+        _ = provider // suppress unused-variable warning
     }
 
     @Test("MLXProvider.name is non-empty")
     func nameIsNonEmpty() {
-        let provider: any LLMProvider = MLXProvider()
+        let provider = MLXProvider()
         #expect(!provider.name.isEmpty)
     }
 }
