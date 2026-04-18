@@ -59,6 +59,7 @@ class RemindersService: RemindersServiceProtocol {
 
     /// Fetches all reminders from EventKit, requesting permission if not yet determined.
     func fetchTasks() async throws -> [NucleTask] {
+        try await SentryConfig.traced(operation: "db.query", name: "RemindersService.fetchTasks") {
         // Check and request permissions if needed
         if permissionsManager.remindersAuthStatus == .notDetermined {
             _ = await permissionsManager.requestRemindersAccess()
@@ -87,6 +88,7 @@ class RemindersService: RemindersServiceProtocol {
             return ekReminders.compactMap { convertToNucleTask(from: $0) }
         } catch {
             throw RemindersServiceError.fetchFailed(error)
+        }
         }
     }
 

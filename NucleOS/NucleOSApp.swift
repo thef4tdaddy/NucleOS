@@ -9,6 +9,11 @@ import SwiftUI
 
 @main
 struct NucleOSApp: App {
+
+    init() {
+        SentryConfig.setup()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

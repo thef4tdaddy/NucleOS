@@ -48,6 +48,7 @@ class CalendarService: CalendarServiceProtocol {
 
     /// Fetches all events occurring today (midnight-to-midnight in the user's time zone).
     func fetchTodayEvents() async throws -> [NucleEvent] {
+        try await SentryConfig.traced(operation: "db.query", name: "CalendarService.fetchTodayEvents") {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
@@ -55,6 +56,7 @@ class CalendarService: CalendarServiceProtocol {
         }
 
         return try await fetchEvents(from: startOfDay, to: endOfDay)
+        }
     }
 
     /// Fetches events in the half-open range [now, now + `days`).
