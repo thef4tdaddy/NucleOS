@@ -82,7 +82,7 @@ jobs:
           xcodebuild test \
             -project NucleOS.xcodeproj \
             -scheme NucleOS \
-            -destination 'platform=macOS' \
+            -destination 'platform=macOS,arch=arm64,v=15.0' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
             -derivedDataPath DerivedData \
