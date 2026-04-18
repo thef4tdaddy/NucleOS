@@ -42,6 +42,9 @@ enum LLMProviderError: Error, LocalizedError {
     /// Inference started but failed before producing output.
     case inferenceError(underlying: Error)
 
+    /// The provider has not been implemented yet.
+    case notImplemented
+
     // MARK: LocalizedError
 
     var errorDescription: String? {
@@ -54,6 +57,8 @@ enum LLMProviderError: Error, LocalizedError {
             return "LLM provider is not available in this environment."
         case .inferenceError(let error):
             return "Inference failed: \(error.localizedDescription)"
+        case .notImplemented:
+            return "This LLM provider has not been implemented yet."
         }
     }
 }
