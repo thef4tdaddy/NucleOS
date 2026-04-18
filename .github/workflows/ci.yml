@@ -125,43 +125,51 @@ jobs:
       - name: Convert coverage to lcov
         if: always()
         run: |
-          PROF="DerivedData/Build/ProfileData/665e6d18a0bc9ed0a0d9782c20c1ccb0b9e5a8cb/Coverage.profdata"
-
+          PROF=$(find DerivedData/Build/ProfileData -name 'Coverage.profdata' -type f | head -1)
           TEST_BUNDLES=$(find DerivedData/Build/Products/Debug -name '*.xctest' -type d)
 
           echo "Using PROF=$PROF"
-          echo "Test bundles:"
-          echo "$TEST_BUNDLES"
-
-          if [ -z "$TEST_BUNDLES" ] || [ ! -f "$PROF" ]; then
-            echo "❌ Coverage inputs not found"
+          if [ ! -f "$PROF" ]; then
+            echo "❌ PROF file not found"
             touch coverage.lcov
             exit 0
           fi
 
+          echo "Test bundles:"
+          echo "$TEST_BUNDLES"
+
           rm -f coverage.lcov
+          if [ -z "$TEST_BUNDLES" ]; then
+            echo "❌ No *.xctest bundles found"
+            touch coverage.lcov
+            exit 0
+          fi
+
           while IFS= read -r bundle; do
             [ -z "$bundle" ] && continue
+            echo "Processing bundle: $bundle"
             name=$(basename "$bundle" .xctest)
             bin="$bundle/Contents/MacOS/$name"
 
             if [ -f "$bin" ]; then
-              echo "Exporting coverage for $bin"
+              echo "  Exporting coverage for $bin"
               xcrun llvm-cov export \
                 -format=lcov \
                 -instr-profile="$PROF" \
                 "$bin" >> coverage.lcov
+            else
+              echo "  ❌ Missing binary $bin"
             fi
           done <<< "$TEST_BUNDLES"
 
-          if [ -s coverage.lcov ]; then
-            echo "✅ Coverage generated"
-            head -20 coverage.lcov
-          else
+          if [ ! -s coverage.lcov ]; then
             echo "❌ coverage.lcov is empty"
             touch coverage.lcov
+          else
+            echo "✅ Coverage generated"
+            head -20 coverage.lcov
           fi
-
+          
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v4
