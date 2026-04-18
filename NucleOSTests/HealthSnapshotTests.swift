@@ -207,8 +207,9 @@ struct HealthSnapshotTests {
     @Test("snapshots with same ID are equal")
     func hashableWithSameIdEquals() {
         let id = UUID()
-        let s1 = HealthSnapshot(id: id, steps: 100, heartRate: 72, sleepDuration: 0, activeCalories: 0)
-        let s2 = HealthSnapshot(id: id, steps: 100, heartRate: 72, sleepDuration: 0, activeCalories: 0)
+        let date = Date()
+        let s1 = HealthSnapshot(id: id, steps: 100, heartRate: 72, sleepDuration: 0, activeCalories: 0, date: date)
+        let s2 = HealthSnapshot(id: id, steps: 100, heartRate: 72, sleepDuration: 0, activeCalories: 0, date: date)
         #expect(s1 == s2)
         #expect(s1.hashValue == s2.hashValue)
     }
