@@ -109,6 +109,18 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
           exit ${PIPESTATUS[0]}
+      
+      - name: Debug coverage paths
+        if: always()
+        run: |
+          echo "=== PROFData files ==="
+          find DerivedData -name '*.profdata' -type f
+
+          echo "=== App bundles ==="
+          find DerivedData -name 'NucleOS.app' -type d
+
+          echo "=== Executables named NucleOS ==="
+          find DerivedData -type f -name 'NucleOS' | grep -v '\.dSYM' || true
 
       - name: Convert coverage to lcov
         if: always()
