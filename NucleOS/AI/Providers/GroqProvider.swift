@@ -15,10 +15,12 @@
 //
 //  ERROR HANDLING
 //  ==============
-//  - No Keychain key → throws `LLMProviderError.unavailable`
-//  - HTTP 429        → throws `LLMProviderError.rateLimitExceeded`
-//  - Network failure → throws `LLMProviderError.networkError(underlying:)`
-//  - Bad response    → throws `LLMProviderError.inferenceError(underlying:)`
+//  - No Keychain key        → throws `LLMProviderError.unavailable`
+//  - HTTP 429               → throws `LLMProviderError.rateLimitExceeded`
+//  - Transport failure      → throws `LLMProviderError.networkError(underlying:)`
+//  - Non-2xx HTTP response  → throws `LLMProviderError.inferenceError(underlying:)`
+//                             (includes the HTTP status code in the underlying error)
+//  - JSON parsing failure   → throws `LLMProviderError.inferenceError(underlying:)`
 //
 
 import Foundation
@@ -130,6 +132,10 @@ struct GroqProvider: LLMProvider {
     }
 
     /// Executes the URL request and validates the HTTP status code.
+    ///
+    /// - Transport errors → `LLMProviderError.networkError`
+    /// - HTTP 429         → `LLMProviderError.rateLimitExceeded`
+    /// - Other non-2xx    → `LLMProviderError.inferenceError` (with status code)
     private func executeRequest(_ request: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
@@ -147,7 +153,9 @@ struct GroqProvider: LLMProvider {
             case 429:
                 throw LLMProviderError.rateLimitExceeded
             default:
-                throw LLMProviderError.networkError(underlying: URLError(.badServerResponse))
+                throw LLMProviderError.inferenceError(
+                    underlying: GroqHTTPError(statusCode: http.statusCode)
+                )
             }
         }
 
@@ -181,5 +189,19 @@ private struct GroqResponse: Decodable {
 
     struct Message: Decodable {
         let content: String
+    }
+}
+
+// MARK: - Private Error Types
+
+/// Represents a non-2xx, non-429 HTTP response from the Groq API.
+/// Carries the status code so it is visible in `LLMProviderError.inferenceError`'s
+/// underlying error and surfaces meaningful debug information without leaking
+/// server-error details into user-facing messaging.
+private struct GroqHTTPError: LocalizedError {
+    let statusCode: Int
+
+    var errorDescription: String? {
+        "Groq API returned unexpected HTTP status \(statusCode)."
     }
 }

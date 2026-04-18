@@ -6,6 +6,13 @@
 //  Tests availability checks and constants without requiring a live API key
 //  or network access.
 //
+//  KEYCHAIN SAFETY
+//  ===============
+//  Every test that writes to the Keychain first snapshots the existing value
+//  and restores it (or deletes the entry if there was none) in a `defer` block.
+//  This makes the suite non-destructive when run on a machine that already has
+//  a real Groq API key configured.
+//
 
 import Testing
 import Foundation
@@ -18,6 +25,23 @@ struct GroqProviderTests {
 
     private func makeProvider() -> GroqProvider {
         GroqProvider()
+    }
+
+    /// Snapshots the current Groq API key from Keychain (if any) and returns a
+    /// `defer`-compatible restore closure. Call this at the top of any test that
+    /// mutates the Groq Keychain entry.
+    private func snapshotGroqKey() -> String? {
+        try? KeychainHelper.get(key: KeychainHelper.groqAPIKey) ?? nil
+    }
+
+    /// Restores the Groq Keychain entry to `previousValue`, or deletes the entry
+    /// if `previousValue` is `nil`. Call this in `defer` after `snapshotGroqKey`.
+    private func restoreGroqKey(_ previousValue: String?) {
+        if let value = previousValue {
+            try? KeychainHelper.save(key: KeychainHelper.groqAPIKey, value: value)
+        } else {
+            try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey)
+        }
     }
 
     // MARK: - Constants
@@ -44,7 +68,9 @@ struct GroqProviderTests {
     // MARK: - isAvailable
 
     @Test("isAvailable is false when no API key is in Keychain")
-    func isAvailableFalseWhenNoKey() throws {
+    func isAvailableFalseWhenNoKey() {
+        let previous = snapshotGroqKey()
+        defer { restoreGroqKey(previous) }
         try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey)
         let provider = makeProvider()
         #expect(!provider.isAvailable)
@@ -52,24 +78,27 @@ struct GroqProviderTests {
 
     @Test("isAvailable is true when a non-empty API key is in Keychain")
     func isAvailableTrueWhenKeyPresent() throws {
+        let previous = snapshotGroqKey()
+        defer { restoreGroqKey(previous) }
         try KeychainHelper.save(key: KeychainHelper.groqAPIKey, value: "test-key-12345")
-        defer { try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey) }
         let provider = makeProvider()
         #expect(provider.isAvailable)
     }
 
     @Test("isAvailable is false when Keychain key is an empty string")
     func isAvailableFalseWhenEmptyKey() throws {
+        let previous = snapshotGroqKey()
+        defer { restoreGroqKey(previous) }
         try KeychainHelper.save(key: KeychainHelper.groqAPIKey, value: "")
-        defer { try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey) }
         let provider = makeProvider()
         #expect(!provider.isAvailable)
     }
 
     @Test("isAvailable is false when Keychain key is only whitespace")
     func isAvailableFalseWhenWhitespaceKey() throws {
+        let previous = snapshotGroqKey()
+        defer { restoreGroqKey(previous) }
         try KeychainHelper.save(key: KeychainHelper.groqAPIKey, value: "   ")
-        defer { try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey) }
         let provider = makeProvider()
         #expect(!provider.isAvailable)
     }
@@ -78,6 +107,8 @@ struct GroqProviderTests {
 
     @Test("complete throws LLMProviderError.unavailable when no API key is present")
     func completeThrowsUnavailableWhenNoKey() async {
+        let previous = snapshotGroqKey()
+        defer { restoreGroqKey(previous) }
         try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey)
         let provider = makeProvider()
         do {
