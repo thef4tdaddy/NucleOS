@@ -77,16 +77,7 @@ struct GroqProviderTests {
     // MARK: - complete — error paths (no live network required)
 
     @Test("complete throws LLMProviderError.unavailable when no API key is present")
-    func completeThrowsUnavailableWhenNoKey() async throws {
-        try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey)
-        let provider = makeProvider()
-        await #expect(throws: LLMProviderError.self) {
-            _ = try await provider.complete(prompt: "hello")
-        }
-    }
-
-    @Test("complete throws LLMProviderError when called without a key")
-    func completeThrowsTypedError() async {
+    func completeThrowsUnavailableWhenNoKey() async {
         try? KeychainHelper.delete(key: KeychainHelper.groqAPIKey)
         let provider = makeProvider()
         do {

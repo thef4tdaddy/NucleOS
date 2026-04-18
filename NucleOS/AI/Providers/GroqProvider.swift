@@ -42,9 +42,8 @@ struct GroqProvider: LLMProvider {
     /// Default Groq model identifier used for all completions.
     static let defaultModel = "llama3-8b-8192"
 
-    /// Groq OpenAI-compatible completions endpoint.
-    // swiftlint:disable:next force_unwrapping
-    private static let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
+    /// Groq OpenAI-compatible completions endpoint URL string.
+    private static let apiURLString = "https://api.groq.com/openai/v1/chat/completions"
 
     /// Maximum tokens to request in each completion.
     private static let maxTokens = 512
@@ -60,9 +59,9 @@ struct GroqProvider: LLMProvider {
     ///
     /// Returns `false` silently when the key is absent — no prompt, no crash.
     nonisolated var isAvailable: Bool {
-        guard let key = try? KeychainHelper.get(key: KeychainHelper.groqAPIKey),
-              let trimmed = key,
-              !trimmed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard let rawKey = try? KeychainHelper.get(key: KeychainHelper.groqAPIKey),
+              let key = rawKey,
+              !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
         return true
@@ -108,10 +107,10 @@ struct GroqProvider: LLMProvider {
 
     /// Builds a POST request to the Groq completions endpoint.
     private func buildRequest(prompt: String, apiKey: String) throws -> URLRequest {
-        var request = URLRequest(
-            url: GroqProvider.apiURL,
-            timeoutInterval: GroqProvider.timeoutInterval
-        )
+        guard let url = URL(string: GroqProvider.apiURLString) else {
+            throw LLMProviderError.inferenceError(underlying: URLError(.badURL))
+        }
+        var request = URLRequest(url: url, timeoutInterval: GroqProvider.timeoutInterval)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
