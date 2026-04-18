@@ -97,7 +97,6 @@ jobs:
           if [ -n "$PROF" ] && [ -n "$BIN" ]; then
             xcrun llvm-cov export \
               -format=lcov \
-              --path-substitution "$(pwd)::" \
               -instr-profile="$PROF" \
               "$BIN" > coverage.lcov
             echo "✅ Coverage generated with fixed paths"
