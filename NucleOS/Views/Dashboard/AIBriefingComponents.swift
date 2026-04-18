@@ -40,22 +40,38 @@ import SwiftUI
 ///
 /// Inject a custom ``AIBriefingServiceProtocol`` via the view model initialiser
 /// for previews and tests.
+///
+/// Pass a ``HealthSnapshot`` to include privacy-safe health context in the
+/// generated briefing when the user has enabled AI health summaries in Settings.
 struct AIBriefingPanelView: View {
 
     // MARK: View model
 
     @StateObject private var viewModel: AIBriefingViewModel
 
+    // MARK: Health context
+
+    /// The current health snapshot forwarded to the view model when it changes.
+    var healthSnapshot: HealthSnapshot?
+
     // MARK: Init
 
-    /// Creates the panel with the given view model.
+    /// Creates the panel with the given view model and optional health snapshot.
     ///
     /// The default creates an ``AIBriefingViewModel`` backed by ``MLXProvider``,
     /// which loads its model lazily on the first inference call.
     /// Pass a custom view model (e.g. backed by ``MockAIBriefingService``) for
     /// previews and tests.
-    init(viewModel: AIBriefingViewModel = AIBriefingViewModel()) {
+    ///
+    /// - Parameters:
+    ///   - viewModel: The view model that drives panel state.
+    ///   - healthSnapshot: Optional aggregate health metrics passed to the view
+    ///     model. When non-nil and the user has enabled AI health summaries, these
+    ///     values are forwarded (via ``DefaultHealthSummaryPromptBuilder``) to the
+    ///     active ``LLMProvider`` as privacy-safe health context.
+    init(viewModel: AIBriefingViewModel = AIBriefingViewModel(), healthSnapshot: HealthSnapshot? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.healthSnapshot = healthSnapshot
     }
 
     // MARK: Body
@@ -76,6 +92,9 @@ struct AIBriefingPanelView: View {
         )
         .task {
             await viewModel.initialise()
+        }
+        .onChange(of: healthSnapshot) { _, newSnapshot in
+            viewModel.healthSnapshot = newSnapshot
         }
     }
 

@@ -27,6 +27,8 @@ enum AIBriefingState {
 /// Drives the AI Briefing dashboard panel.
 ///
 /// Inject a custom ``AIBriefingServiceProtocol`` conformance in previews and tests.
+/// Pass an optional ``HealthSnapshot`` to include health context in the generated
+/// briefing when the user has enabled AI health summaries.
 @MainActor
 final class AIBriefingViewModel: ObservableObject {
 
@@ -34,6 +36,26 @@ final class AIBriefingViewModel: ObservableObject {
 
     @Published private(set) var state: AIBriefingState = .idle
     @Published private(set) var lastUpdated: Date?
+
+    // MARK: Health context
+
+    /// The latest health snapshot used to enrich the AI briefing.
+    ///
+    /// Set this to the current `HealthViewModel.snapshot` value. When non-nil
+    /// and `isHealthSummaryEnabled` is `true`, the snapshot is forwarded (via
+    /// `DefaultHealthSummaryPromptBuilder`) to the LLM provider as privacy-safe
+    /// health context.  Raw HealthKit types never leave the `HealthSnapshot`
+    /// privacy boundary.
+    var healthSnapshot: HealthSnapshot?
+
+    /// `true` when the user has explicitly enabled AI health summaries in Settings.
+    ///
+    /// Reads `AIBriefingService.healthSummaryEnabledKey` from `UserDefaults`.
+    /// Defaults to `false` — health data is never sent to an LLM provider until
+    /// the user opts in.
+    var isHealthSummaryEnabled: Bool {
+        UserDefaults.standard.bool(forKey: AIBriefingService.healthSummaryEnabledKey)
+    }
 
     // MARK: Private
 
@@ -43,8 +65,12 @@ final class AIBriefingViewModel: ObservableObject {
 
     // MARK: Init
 
-    init(service: any AIBriefingServiceProtocol = AIBriefingService(provider: MLXProvider())) {
+    init(
+        service: any AIBriefingServiceProtocol = AIBriefingService(provider: MLXProvider()),
+        healthSnapshot: HealthSnapshot? = nil
+    ) {
         self.service = service
+        self.healthSnapshot = healthSnapshot
     }
 
     // MARK: - Lifecycle
@@ -70,6 +96,11 @@ final class AIBriefingViewModel: ObservableObject {
 
     /// Requests a new briefing from the service.
     ///
+    /// When `isHealthSummaryEnabled` is `true` and a `healthSnapshot` is available,
+    /// the snapshot is forwarded to the service so privacy-safe health context is
+    /// included in the LLM prompt. When health summaries are disabled, `nil` is
+    /// passed and health data is never sent to the provider.
+    ///
     /// Guards against concurrent invocations — additional taps while a generation
     /// is in progress are ignored. Maps `noProviderAvailable` errors to
     /// `.unavailable` so the panel reflects the correct state rather than showing
@@ -84,7 +115,8 @@ final class AIBriefingViewModel: ObservableObject {
         state = .loading
         defer { isGenerating = false }
         do {
-            let briefing = try await service.generate()
+            let snapshot = isHealthSummaryEnabled ? healthSnapshot : nil
+            let briefing = try await service.generate(healthSnapshot: snapshot)
             lastUpdated = Date()
             state = .loaded(briefing)
         } catch AIBriefingError.noProviderAvailable {

@@ -76,6 +76,59 @@ struct AIBriefingServiceTests {
         #expect(result == MockLLMProvider.hardcodedResponse)
     }
 
+    @Test("AIBriefingService.generate(healthSnapshot:) with nil snapshot returns provider completion")
+    func realServiceGenerateNilSnapshotReturnsCompletion() async throws {
+        let provider = MockLLMProvider()
+        let service = AIBriefingService(provider: provider)
+        let result = try await service.generate(healthSnapshot: nil)
+        #expect(result == MockLLMProvider.hardcodedResponse)
+    }
+
+    @Test("AIBriefingService.generate(healthSnapshot:) with snapshot returns provider completion")
+    func realServiceGenerateWithSnapshotReturnsCompletion() async throws {
+        let provider = MockLLMProvider()
+        let service = AIBriefingService(provider: provider)
+        let result = try await service.generate(healthSnapshot: MockData.healthSnapshot)
+        #expect(result == MockLLMProvider.hardcodedResponse)
+    }
+
+    @Test("AIBriefingService.generate throws noProviderAvailable when unavailable")
+    func realServiceGenerateThrowsWhenUnavailable() async throws {
+        struct UnavailableProvider: LLMProvider {
+            nonisolated var name: String { "Unavailable" }
+            nonisolated var isAvailable: Bool { false }
+            nonisolated func complete(prompt: String) async throws -> String {
+                throw LLMProviderError.unavailable
+            }
+        }
+        let service = AIBriefingService(provider: UnavailableProvider())
+        await #expect(throws: AIBriefingError.noProviderAvailable) {
+            _ = try await service.generate(healthSnapshot: nil)
+        }
+    }
+
+    @Test("AIBriefingService.healthSummaryEnabledKey is non-empty")
+    func healthSummaryEnabledKeyNonEmpty() {
+        #expect(!AIBriefingService.healthSummaryEnabledKey.isEmpty)
+    }
+
+    // MARK: - MockAIBriefingService — generate with health snapshot
+
+    @Test("MockAIBriefingService.generate(healthSnapshot:) returns MockData.aiBriefing")
+    func mockGenerateWithSnapshotReturnsMockData() async throws {
+        let service = MockAIBriefingService()
+        let result = try await service.generate(healthSnapshot: MockData.healthSnapshot)
+        #expect(result == MockData.aiBriefing)
+    }
+
+    @Test("MockAIBriefingService.generate(healthSnapshot:) throws when unavailable")
+    func mockGenerateWithSnapshotThrowsWhenUnavailable() async {
+        let service = MockAIBriefingService(hasAvailableProvider: false)
+        await #expect(throws: AIBriefingError.noProviderAvailable) {
+            _ = try await service.generate(healthSnapshot: MockData.healthSnapshot)
+        }
+    }
+
     // MARK: - AIBriefingError
 
     @Test("AIBriefingError.noProviderAvailable has non-empty description")
