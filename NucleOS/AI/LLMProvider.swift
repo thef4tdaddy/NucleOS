@@ -17,8 +17,6 @@
 //  No UI code belongs in this file or in any conforming implementation file.
 //
 
-import Foundation
-
 // MARK: - LLMProvider
 
 /// Abstraction over every AI backend that NucleOS can use.
