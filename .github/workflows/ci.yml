@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 permissions:
   contents: read
   pull-requests: write
@@ -28,6 +25,18 @@ jobs:
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Clear SwiftPM caches
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf DerivedData
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NucleOS.xcodeproj \
+            -scheme NucleOS
 
       - name: Build
         id: build
@@ -77,6 +86,18 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
 
+      - name: Clear SwiftPM caches
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf DerivedData
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NucleOS.xcodeproj \
+            -scheme NucleOS
+
       - name: Run tests with coverage
         run: |
           xcodebuild test \
@@ -89,17 +110,17 @@ jobs:
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
           exit ${PIPESTATUS[0]}
 
-      - name: Convert coverage to lcov (CODECOV FIXED)
+      - name: Convert coverage to lcov
         if: always()
         run: |
           PROF=$(find DerivedData -name '*.profdata' 2>/dev/null | head -1)
-          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\\.dSYM' | head -1)
+          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\.dSYM' | head -1)
           if [ -n "$PROF" ] && [ -n "$BIN" ]; then
             xcrun llvm-cov export \
               -format=lcov \
               -instr-profile="$PROF" \
               "$BIN" > coverage.lcov
-            echo "✅ Coverage generated with fixed paths"
+            echo "✅ Coverage generated"
             head -10 coverage.lcov
           else
             echo "❌ Coverage files not found"
