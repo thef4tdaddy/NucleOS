@@ -42,6 +42,9 @@ enum LLMProviderError: Error, LocalizedError {
     /// Inference started but failed before producing output.
     case inferenceError(underlying: Error)
 
+    /// The provider has not been implemented yet.
+    case notImplemented
+
     /// A network-level failure occurred while communicating with a cloud provider
     /// (e.g. no internet connection, DNS failure, TLS error, or timeout).
     case networkError(underlying: Error)
@@ -61,6 +64,8 @@ enum LLMProviderError: Error, LocalizedError {
             return "LLM provider is not available in this environment."
         case .inferenceError(let error):
             return "Inference failed: \(error.localizedDescription)"
+        case .notImplemented:
+            return "This LLM provider has not been implemented yet."
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .rateLimitExceeded:
