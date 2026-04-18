@@ -17,6 +17,47 @@
 //  No UI code belongs in this file or in any conforming implementation file.
 //
 
+import Foundation
+
+// MARK: - LLMProviderError
+
+/// Typed errors thrown by `LLMProvider` implementations.
+///
+/// All provider conformances must throw one of these cases rather than
+/// propagating raw underlying errors so that callers can handle failures
+/// in a uniform way without depending on provider-specific error types.
+enum LLMProviderError: Error, LocalizedError {
+
+    /// No model is installed at the configured path, or no path has been set.
+    case modelNotFound(path: String)
+
+    /// The model exists on disk but could not be loaded (e.g. corrupt weights,
+    /// unsupported format, or insufficient memory).
+    case modelLoadFailed(underlying: Error)
+
+    /// The provider is not available in the current environment
+    /// (e.g. MLX on a non-Apple-Silicon machine, or a missing API key).
+    case unavailable
+
+    /// Inference started but failed before producing output.
+    case inferenceError(underlying: Error)
+
+    // MARK: LocalizedError
+
+    var errorDescription: String? {
+        switch self {
+        case .modelNotFound(let path):
+            return "Model not found at path: \(path)"
+        case .modelLoadFailed(let error):
+            return "Failed to load model: \(error.localizedDescription)"
+        case .unavailable:
+            return "LLM provider is not available in this environment."
+        case .inferenceError(let error):
+            return "Inference failed: \(error.localizedDescription)"
+        }
+    }
+}
+
 // MARK: - LLMProvider
 
 /// Abstraction over every AI backend that NucleOS can use.
