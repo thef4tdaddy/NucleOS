@@ -49,7 +49,7 @@ jobs:
             echo "errors=" >> "$GITHUB_OUTPUT"
           else
             echo "status=failure" >> "$GITHUB_OUTPUT"
-            ERRORS=$(grep "error:" build.log | head -20 | sed 's/"/\\"/g' || true)
+            ERRORS=$(grep "error:" build.log | head -20 | sed 's/"/\\\\"/g' || true)
             echo "errors<<EOF" >> "$GITHUB_OUTPUT"
             echo "$ERRORS" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
@@ -60,7 +60,6 @@ jobs:
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
-
         with:
           name: build-log
           path: build.log
@@ -72,6 +71,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures Codecov detects base commits
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
@@ -88,18 +89,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
           exit ${PIPESTATUS[0]}
 
-      - name: Convert coverage to lcov
+      - name: Convert coverage to lcov (CODECOV FIXED)
         if: always()
         run: |
           PROF=$(find DerivedData -name '*.profdata' 2>/dev/null | head -1)
-          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\.dSYM' | head -1)
+          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\\.dSYM' | head -1)
           if [ -n "$PROF" ] && [ -n "$BIN" ]; then
             xcrun llvm-cov export \
               -format=lcov \
+              --path-substitution "$(pwd)::" \
               -instr-profile="$PROF" \
               "$BIN" > coverage.lcov
+            echo "✅ Coverage generated with fixed paths"
+            head -10 coverage.lcov  # Debug: show first paths
           else
-            echo "Coverage data not found — skipping lcov export"
+            echo "❌ Coverage files not found"
             touch coverage.lcov
           fi
 
@@ -119,6 +123,7 @@ jobs:
           path: |
             test.log
             TestResults.xcresult
+            coverage.lcov  # Now downloadable for debugging
 
   swiftlint:
     name: SwiftLint
@@ -146,14 +151,14 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
             echo "violations=" >> $GITHUB_OUTPUT
           else
-            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "status=failure" >> $GITHUB_OUTPUT"
             VIOLATIONS=$(cat swiftlint.json | python3 -c "
           import json, sys
           data = json.load(sys.stdin)
           lines = []
           for v in data[:20]:
             lines.append(f\"{v['file'].split('/')[-1]}:{v['line']} — {v['reason']} ({v['severity']})\")
-          print('\n'.join(lines))
+          print('\\n'.join(lines))
           " 2>/dev/null || echo "See artifacts for details")
             echo "violations<<EOF" >> $GITHUB_OUTPUT
             echo "$VIOLATIONS" >> $GITHUB_OUTPUT
