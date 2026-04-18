@@ -2,256 +2,271 @@
 //  PermissionsManagerTests.swift
 //  NucleOSTests
 //
-//  Tests for PermissionsManager — a new file added in this PR.
-//  Since PermissionsManager wraps real EventKit authorization,
-//  we test the computed properties by directly mutating the published
-//  authorization status properties on the shared singleton.
-//
-//  Note: Real permission request methods (requestRemindersAccess /
-//  requestCalendarAccess) are not tested here because they would
-//  attempt to pop system permission dialogs or fail without entitlements.
+//  Tests for PermissionsManager computed properties by directly mutating
+//  the published authorization status properties on the shared singleton.
+//  Real permission request methods are not tested here — they would attempt
+//  to pop system permission dialogs or fail without entitlements.
 //
 
 import EventKit
-import XCTest
+import Foundation
+import Testing
 @testable import NucleOS
 
 @MainActor
-final class PermissionsManagerTests: XCTestCase {
+@Suite("Permissions Manager")
+struct PermissionsManagerTests {
 
-    // MARK: - hasRemindersAccess Tests
+    // MARK: - hasRemindersAccess
 
-    func testHasRemindersAccessTrueWhenFullAccess() {
+    @Test("hasRemindersAccess is true when fullAccess")
+    func hasRemindersAccessTrueWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .fullAccess
-        XCTAssertTrue(manager.hasRemindersAccess)
+        #expect(manager.hasRemindersAccess)
     }
 
-    func testHasRemindersAccessTrueWhenAuthorized() {
+    @Test("hasRemindersAccess is true when authorized")
+    func hasRemindersAccessTrueWhenAuthorized() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .authorized
-        XCTAssertTrue(manager.hasRemindersAccess)
+        #expect(manager.hasRemindersAccess)
     }
 
-    func testHasRemindersAccessFalseWhenDenied() {
+    @Test("hasRemindersAccess is false when denied")
+    func hasRemindersAccessFalseWhenDenied() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .denied
-        XCTAssertFalse(manager.hasRemindersAccess)
+        #expect(!manager.hasRemindersAccess)
     }
 
-    func testHasRemindersAccessFalseWhenNotDetermined() {
+    @Test("hasRemindersAccess is false when notDetermined")
+    func hasRemindersAccessFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .notDetermined
-        XCTAssertFalse(manager.hasRemindersAccess)
+        #expect(!manager.hasRemindersAccess)
     }
 
-    func testHasRemindersAccessFalseWhenRestricted() {
+    @Test("hasRemindersAccess is false when restricted")
+    func hasRemindersAccessFalseWhenRestricted() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .restricted
-        XCTAssertFalse(manager.hasRemindersAccess)
+        #expect(!manager.hasRemindersAccess)
     }
 
-    // MARK: - hasCalendarAccess Tests
+    // MARK: - hasCalendarAccess
 
-    func testHasCalendarAccessTrueWhenFullAccess() {
+    @Test("hasCalendarAccess is true when fullAccess")
+    func hasCalendarAccessTrueWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .fullAccess
-        XCTAssertTrue(manager.hasCalendarAccess)
+        #expect(manager.hasCalendarAccess)
     }
 
-    func testHasCalendarAccessTrueWhenAuthorized() {
+    @Test("hasCalendarAccess is true when authorized")
+    func hasCalendarAccessTrueWhenAuthorized() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .authorized
-        XCTAssertTrue(manager.hasCalendarAccess)
+        #expect(manager.hasCalendarAccess)
     }
 
-    func testHasCalendarAccessFalseWhenDenied() {
+    @Test("hasCalendarAccess is false when denied")
+    func hasCalendarAccessFalseWhenDenied() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .denied
-        XCTAssertFalse(manager.hasCalendarAccess)
+        #expect(!manager.hasCalendarAccess)
     }
 
-    func testHasCalendarAccessFalseWhenNotDetermined() {
+    @Test("hasCalendarAccess is false when notDetermined")
+    func hasCalendarAccessFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .notDetermined
-        XCTAssertFalse(manager.hasCalendarAccess)
+        #expect(!manager.hasCalendarAccess)
     }
 
-    func testHasCalendarAccessFalseWhenRestricted() {
+    @Test("hasCalendarAccess is false when restricted")
+    func hasCalendarAccessFalseWhenRestricted() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .restricted
-        XCTAssertFalse(manager.hasCalendarAccess)
+        #expect(!manager.hasCalendarAccess)
     }
 
-    // MARK: - isRemindersDenied Tests
+    // MARK: - isRemindersDenied
 
-    func testIsRemindersDeniedTrueWhenDenied() {
+    @Test("isRemindersDenied is true when denied")
+    func isRemindersDeniedTrueWhenDenied() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .denied
-        XCTAssertTrue(manager.isRemindersDenied)
+        #expect(manager.isRemindersDenied)
     }
 
-    func testIsRemindersDeniedFalseWhenNotDetermined() {
+    @Test("isRemindersDenied is false when notDetermined")
+    func isRemindersDeniedFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .notDetermined
-        XCTAssertFalse(manager.isRemindersDenied)
+        #expect(!manager.isRemindersDenied)
     }
 
-    func testIsRemindersDeniedFalseWhenFullAccess() {
+    @Test("isRemindersDenied is false when fullAccess")
+    func isRemindersDeniedFalseWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .fullAccess
-        XCTAssertFalse(manager.isRemindersDenied)
+        #expect(!manager.isRemindersDenied)
     }
 
-    func testIsRemindersDeniedFalseWhenRestricted() {
+    @Test("isRemindersDenied is false when restricted")
+    func isRemindersDeniedFalseWhenRestricted() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .restricted
-        XCTAssertFalse(manager.isRemindersDenied)
+        #expect(!manager.isRemindersDenied)
     }
 
-    // MARK: - isCalendarDenied Tests
+    // MARK: - isCalendarDenied
 
-    func testIsCalendarDeniedTrueWhenDenied() {
+    @Test("isCalendarDenied is true when denied")
+    func isCalendarDeniedTrueWhenDenied() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .denied
-        XCTAssertTrue(manager.isCalendarDenied)
+        #expect(manager.isCalendarDenied)
     }
 
-    func testIsCalendarDeniedFalseWhenNotDetermined() {
+    @Test("isCalendarDenied is false when notDetermined")
+    func isCalendarDeniedFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .notDetermined
-        XCTAssertFalse(manager.isCalendarDenied)
+        #expect(!manager.isCalendarDenied)
     }
 
-    func testIsCalendarDeniedFalseWhenFullAccess() {
+    @Test("isCalendarDenied is false when fullAccess")
+    func isCalendarDeniedFalseWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .fullAccess
-        XCTAssertFalse(manager.isCalendarDenied)
+        #expect(!manager.isCalendarDenied)
     }
 
-    // MARK: - isRemindersRestricted Tests
+    // MARK: - isRemindersRestricted
 
-    func testIsRemindersRestrictedTrueWhenRestricted() {
+    @Test("isRemindersRestricted is true when restricted")
+    func isRemindersRestrictedTrueWhenRestricted() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .restricted
-        XCTAssertTrue(manager.isRemindersRestricted)
+        #expect(manager.isRemindersRestricted)
     }
 
-    func testIsRemindersRestrictedFalseWhenDenied() {
+    @Test("isRemindersRestricted is false when denied")
+    func isRemindersRestrictedFalseWhenDenied() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .denied
-        XCTAssertFalse(manager.isRemindersRestricted)
+        #expect(!manager.isRemindersRestricted)
     }
 
-    func testIsRemindersRestrictedFalseWhenFullAccess() {
+    @Test("isRemindersRestricted is false when fullAccess")
+    func isRemindersRestrictedFalseWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .fullAccess
-        XCTAssertFalse(manager.isRemindersRestricted)
+        #expect(!manager.isRemindersRestricted)
     }
 
-    func testIsRemindersRestrictedFalseWhenNotDetermined() {
+    @Test("isRemindersRestricted is false when notDetermined")
+    func isRemindersRestrictedFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .notDetermined
-        XCTAssertFalse(manager.isRemindersRestricted)
+        #expect(!manager.isRemindersRestricted)
     }
 
-    // MARK: - isCalendarRestricted Tests
+    // MARK: - isCalendarRestricted
 
-    func testIsCalendarRestrictedTrueWhenRestricted() {
+    @Test("isCalendarRestricted is true when restricted")
+    func isCalendarRestrictedTrueWhenRestricted() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .restricted
-        XCTAssertTrue(manager.isCalendarRestricted)
+        #expect(manager.isCalendarRestricted)
     }
 
-    func testIsCalendarRestrictedFalseWhenDenied() {
+    @Test("isCalendarRestricted is false when denied")
+    func isCalendarRestrictedFalseWhenDenied() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .denied
-        XCTAssertFalse(manager.isCalendarRestricted)
+        #expect(!manager.isCalendarRestricted)
     }
 
-    func testIsCalendarRestrictedFalseWhenFullAccess() {
+    @Test("isCalendarRestricted is false when fullAccess")
+    func isCalendarRestrictedFalseWhenFullAccess() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .fullAccess
-        XCTAssertFalse(manager.isCalendarRestricted)
+        #expect(!manager.isCalendarRestricted)
     }
 
-    func testIsCalendarRestrictedFalseWhenNotDetermined() {
+    @Test("isCalendarRestricted is false when notDetermined")
+    func isCalendarRestrictedFalseWhenNotDetermined() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .notDetermined
-        XCTAssertFalse(manager.isCalendarRestricted)
+        #expect(!manager.isCalendarRestricted)
     }
 
-    // MARK: - Mutual exclusivity tests (denied vs restricted)
+    // MARK: - Mutual exclusivity
 
-    func testDeniedAndRestrictedAreMutuallyExclusiveForReminders() {
+    @Test("denied and restricted are mutually exclusive for reminders")
+    func deniedAndRestrictedAreMutuallyExclusiveForReminders() {
         let manager = PermissionsManager.shared
 
         manager.remindersAuthStatus = .denied
-        XCTAssertTrue(manager.isRemindersDenied)
-        XCTAssertFalse(manager.isRemindersRestricted)
+        #expect(manager.isRemindersDenied)
+        #expect(!manager.isRemindersRestricted)
 
         manager.remindersAuthStatus = .restricted
-        XCTAssertFalse(manager.isRemindersDenied)
-        XCTAssertTrue(manager.isRemindersRestricted)
+        #expect(!manager.isRemindersDenied)
+        #expect(manager.isRemindersRestricted)
     }
 
-    func testDeniedAndRestrictedAreMutuallyExclusiveForCalendar() {
+    @Test("denied and restricted are mutually exclusive for calendar")
+    func deniedAndRestrictedAreMutuallyExclusiveForCalendar() {
         let manager = PermissionsManager.shared
 
         manager.calendarAuthStatus = .denied
-        XCTAssertTrue(manager.isCalendarDenied)
-        XCTAssertFalse(manager.isCalendarRestricted)
+        #expect(manager.isCalendarDenied)
+        #expect(!manager.isCalendarRestricted)
 
         manager.calendarAuthStatus = .restricted
-        XCTAssertFalse(manager.isCalendarDenied)
-        XCTAssertTrue(manager.isCalendarRestricted)
+        #expect(!manager.isCalendarDenied)
+        #expect(manager.isCalendarRestricted)
     }
 
-    // MARK: - Access and denied/restricted are mutually exclusive
-
-    func testHasAccessAndIsDeniedAreMutuallyExclusiveForReminders() {
+    @Test("hasAccess and isDenied are mutually exclusive for reminders")
+    func hasAccessAndIsDeniedAreMutuallyExclusiveForReminders() {
         let manager = PermissionsManager.shared
-
         manager.remindersAuthStatus = .fullAccess
-        XCTAssertTrue(manager.hasRemindersAccess)
-        XCTAssertFalse(manager.isRemindersDenied)
-        XCTAssertFalse(manager.isRemindersRestricted)
+        #expect(manager.hasRemindersAccess)
+        #expect(!manager.isRemindersDenied)
+        #expect(!manager.isRemindersRestricted)
     }
 
-    func testHasAccessAndIsDeniedAreMutuallyExclusiveForCalendar() {
+    @Test("hasAccess and isDenied are mutually exclusive for calendar")
+    func hasAccessAndIsDeniedAreMutuallyExclusiveForCalendar() {
         let manager = PermissionsManager.shared
-
         manager.calendarAuthStatus = .fullAccess
-        XCTAssertTrue(manager.hasCalendarAccess)
-        XCTAssertFalse(manager.isCalendarDenied)
-        XCTAssertFalse(manager.isCalendarRestricted)
+        #expect(manager.hasCalendarAccess)
+        #expect(!manager.isCalendarDenied)
+        #expect(!manager.isCalendarRestricted)
     }
 
-    // MARK: - Shared instance is the same object
+    // MARK: - Published properties are observable
 
-    func testSharedInstanceIsSingleton() {
-        let a = PermissionsManager.shared
-        let b = PermissionsManager.shared
-        XCTAssertTrue(a === b)
-    }
-
-    // MARK: - Published properties change and are observable
-
-    func testCalendarAuthStatusCanBeUpdated() {
+    @Test("calendarAuthStatus can be updated")
+    func calendarAuthStatusCanBeUpdated() {
         let manager = PermissionsManager.shared
         manager.calendarAuthStatus = .notDetermined
-        XCTAssertFalse(manager.hasCalendarAccess)
-
+        #expect(!manager.hasCalendarAccess)
         manager.calendarAuthStatus = .fullAccess
-        XCTAssertTrue(manager.hasCalendarAccess)
+        #expect(manager.hasCalendarAccess)
     }
 
-    func testRemindersAuthStatusCanBeUpdated() {
+    @Test("remindersAuthStatus can be updated")
+    func remindersAuthStatusCanBeUpdated() {
         let manager = PermissionsManager.shared
         manager.remindersAuthStatus = .notDetermined
-        XCTAssertFalse(manager.hasRemindersAccess)
-
+        #expect(!manager.hasRemindersAccess)
         manager.remindersAuthStatus = .authorized
-        XCTAssertTrue(manager.hasRemindersAccess)
+        #expect(manager.hasRemindersAccess)
     }
 }

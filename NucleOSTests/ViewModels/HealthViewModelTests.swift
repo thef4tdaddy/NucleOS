@@ -75,10 +75,16 @@ struct HealthViewModelSwiftTests {
 
     @Test("evaluatePermissionState: denied clears snapshot")
     func evaluateDeniedClearsSnapshot() async {
-        let auth = MockHealthKitAuthorizationService(checkStatusResult: .denied)
+        // Use authorized service first so fetchData populates the snapshot
+        let auth = MockHealthKitAuthorizationService(
+            checkStatusResult: .authorized,
+            requestAuthorizationResult: .authorized
+        )
         let vm = HealthViewModel(service: MockHealthService(), authService: auth)
-        // Set a non-nil snapshot to verify it gets cleared
-        vm.snapshot = HealthSnapshot(steps: 5000, heartRate: 72.0, sleepDuration: 28800, activeCalories: 400)
+        await vm.fetchData()
+        #expect(vm.snapshot != nil)
+        // Now reconfigure to denied and evaluate
+        auth.checkStatusResult = .denied
         await vm.evaluatePermissionState()
         #expect(vm.permissionState == .denied)
         #expect(vm.snapshot == nil)
@@ -144,10 +150,16 @@ struct HealthViewModelSwiftTests {
 
     @Test("requestAuthorization: denied sets state and clears snapshot")
     func requestAuthorizationDenied() async {
-        let auth = MockHealthKitAuthorizationService(requestAuthorizationResult: .denied)
+        // Use authorized service first so fetchData populates the snapshot
+        let auth = MockHealthKitAuthorizationService(
+            checkStatusResult: .authorized,
+            requestAuthorizationResult: .authorized
+        )
         let vm = HealthViewModel(service: MockHealthService(), authService: auth)
-        // Set a non-nil snapshot to verify it gets cleared
-        vm.snapshot = HealthSnapshot(steps: 5000, heartRate: 72.0, sleepDuration: 28800, activeCalories: 400)
+        await vm.fetchData()
+        #expect(vm.snapshot != nil)
+        // Now reconfigure to denied and re-request authorization
+        auth.requestAuthorizationResult = .denied
         await vm.requestAuthorization()
         #expect(vm.permissionState == .denied)
         #expect(vm.snapshot == nil)

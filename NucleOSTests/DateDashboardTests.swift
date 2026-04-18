@@ -5,151 +5,154 @@
 //  Unit tests for Date+Dashboard.swift extension helpers.
 //
 
-import XCTest
+import Foundation
+import Testing
 @testable import NucleOS
 
-final class DateDashboardTests: XCTestCase {
+@Suite("Date Dashboard Extensions")
+struct DateDashboardTests {
 
     // MARK: - startOfToday
 
-    func testStartOfTodayIsAtMidnight() {
+    @Test("startOfToday is at midnight")
+    func startOfTodayIsAtMidnight() {
         let start = Date.startOfToday
         let components = Calendar.current.dateComponents([.hour, .minute, .second], from: start)
-        XCTAssertEqual(components.hour, 0)
-        XCTAssertEqual(components.minute, 0)
-        XCTAssertEqual(components.second, 0)
+        #expect(components.hour == 0)
+        #expect(components.minute == 0)
+        #expect(components.second == 0)
     }
 
-    func testStartOfTodayIsOnCurrentDay() {
+    @Test("startOfToday is on current day")
+    func startOfTodayIsOnCurrentDay() {
         let start = Date.startOfToday
         let now = Date()
         let calendar = Calendar.current
-        XCTAssertEqual(
-            calendar.dateComponents([.year, .month, .day], from: start),
+        #expect(
+            calendar.dateComponents([.year, .month, .day], from: start) ==
             calendar.dateComponents([.year, .month, .day], from: now)
         )
     }
 
-    func testStartOfTodayIsPastOrEqualToNow() {
+    @Test("startOfToday is past or equal to now")
+    func startOfTodayIsPastOrEqualToNow() {
         let start = Date.startOfToday
-        XCTAssertLessThanOrEqual(start, Date())
+        #expect(start <= Date())
     }
 
-    func testStartOfTodayIsWithin24HoursOfNow() {
+    @Test("startOfToday is within 24 hours of now")
+    func startOfTodayIsWithin24HoursOfNow() {
         let start = Date.startOfToday
         let now = Date()
-        // Should be less than 24 hours ago
-        XCTAssertGreaterThan(start, now.addingTimeInterval(-86400))
+        #expect(start > now.addingTimeInterval(-86400))
     }
 
     // MARK: - lastNightRange
 
-    func testLastNightRangeStartIsYesterday6PM() {
+    @Test("lastNightRange start is yesterday at 18:00")
+    func lastNightRangeStartIsYesterday6PM() {
         let (start, _) = Date.lastNightRange()
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute, .second], from: start)
-        XCTAssertEqual(components.hour, 18)
-        XCTAssertEqual(components.minute, 0)
-        XCTAssertEqual(components.second, 0)
+        let components = Calendar.current.dateComponents([.hour, .minute, .second], from: start)
+        #expect(components.hour == 18)
+        #expect(components.minute == 0)
+        #expect(components.second == 0)
     }
 
-    func testLastNightRangeEndIsToday10AM() {
+    @Test("lastNightRange end is today at 10:00")
+    func lastNightRangeEndIsToday10AM() {
         let (_, end) = Date.lastNightRange()
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute, .second], from: end)
-        XCTAssertEqual(components.hour, 10)
-        XCTAssertEqual(components.minute, 0)
-        XCTAssertEqual(components.second, 0)
+        let components = Calendar.current.dateComponents([.hour, .minute, .second], from: end)
+        #expect(components.hour == 10)
+        #expect(components.minute == 0)
+        #expect(components.second == 0)
     }
 
-    func testLastNightRangeStartIsYesterdayDate() {
+    @Test("lastNightRange start date is yesterday")
+    func lastNightRangeStartIsYesterdayDate() {
         let (start, _) = Date.lastNightRange()
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
         let startDay = calendar.startOfDay(for: start)
-        XCTAssertEqual(startDay, yesterday)
+        #expect(startDay == yesterday)
     }
 
-    func testLastNightRangeEndIsTodayDate() {
+    @Test("lastNightRange end date is today")
+    func lastNightRangeEndIsTodayDate() {
         let (_, end) = Date.lastNightRange()
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let endDay = calendar.startOfDay(for: end)
-        XCTAssertEqual(endDay, today)
+        #expect(endDay == today)
     }
 
-    func testLastNightRangeStartIsBeforeEnd() {
+    @Test("lastNightRange start is before end")
+    func lastNightRangeStartIsBeforeEnd() {
         let (start, end) = Date.lastNightRange()
-        XCTAssertLessThan(start, end)
+        #expect(start < end)
     }
 
-    func testLastNightRangeDurationIsApproximately16Hours() {
+    @Test("lastNightRange duration is approximately 16 hours")
+    func lastNightRangeDurationIsApproximately16Hours() {
         let (start, end) = Date.lastNightRange()
-        // 18:00 yesterday to 10:00 today = 16 hours
         let duration = end.timeIntervalSince(start)
-        XCTAssertEqual(duration, 16 * 3600, accuracy: 60) // allow 1 minute tolerance for DST
+        #expect(abs(duration - 16 * 3600) <= 60)
     }
 
-    func testLastNightRangeReturnsTupleWithCorrectLabels() {
+    @Test("lastNightRange tuple start < end")
+    func lastNightRangeReturnsTupleWithCorrectOrder() {
         let range = Date.lastNightRange()
-        XCTAssertLessThan(range.start, range.end)
+        #expect(range.start < range.end)
     }
 
     // MARK: - last24HoursRange
 
-    func testLast24HoursRangeEndIsApproximatelyNow() {
+    @Test("last24HoursRange end is approximately now")
+    func last24HoursRangeEndIsApproximatelyNow() {
         let before = Date()
         let (_, end) = Date.last24HoursRange()
         let after = Date()
-        XCTAssertGreaterThanOrEqual(end, before)
-        XCTAssertLessThanOrEqual(end, after)
+        #expect(end >= before)
+        #expect(end <= after)
     }
 
-    func testLast24HoursRangeStartIsApproximately24HoursAgo() {
+    @Test("last24HoursRange spans approximately 24 hours")
+    func last24HoursRangeStartIsApproximately24HoursAgo() {
         let (start, end) = Date.last24HoursRange()
         let duration = end.timeIntervalSince(start)
-        XCTAssertEqual(duration, 86400, accuracy: 3600) // allow up to 1 hour tolerance for DST adjustments
+        #expect(abs(duration - 86400) <= 3600)
     }
 
-    func testLast24HoursRangeStartIsBeforeEnd() {
+    @Test("last24HoursRange start is before end")
+    func last24HoursRangeStartIsBeforeEnd() {
         let (start, end) = Date.last24HoursRange()
-        XCTAssertLessThan(start, end)
+        #expect(start < end)
     }
 
-    func testLast24HoursRangeEndIsInThePast() {
-        let (start, end) = Date.last24HoursRange()
-        // end should be approximately now; start should be before end
-        XCTAssertLessThan(start, end)
-        // Both should be within reasonable time of now
-        let now = Date()
-        XCTAssertLessThan(end, now.addingTimeInterval(1)) // end <= now + 1s
-    }
-
-    func testLast24HoursRangeReturnsTupleWithCorrectLabels() {
+    @Test("last24HoursRange tuple start < end")
+    func last24HoursRangeReturnsTupleWithCorrectOrder() {
         let range = Date.last24HoursRange()
-        XCTAssertLessThan(range.start, range.end)
+        #expect(range.start < range.end)
     }
 
     // MARK: - Consistency between helpers
 
-    func testStartOfTodayIsWithinLast24Hours() {
+    @Test("startOfToday is within last 24 hours range")
+    func startOfTodayIsWithinLast24Hours() {
         let startOfToday = Date.startOfToday
         let (rangeStart, _) = Date.last24HoursRange()
-        // startOfToday should be >= the start of the 24h range
-        XCTAssertGreaterThanOrEqual(startOfToday, rangeStart)
+        #expect(startOfToday >= rangeStart)
     }
 
-    func testLastNightEndIsBeforeOrEqualStartOfToday10AM() {
+    @Test("lastNightRange end is on today's date")
+    func lastNightEndIsOnTodayDate() {
         let (_, lastNightEnd) = Date.lastNightRange()
         let now = Date()
-        // lastNightEnd (today at 10:00) should be in the past or very close to now
-        // (This will pass any time of day since we're just checking it's a reasonable time)
         let calendar = Calendar.current
         let todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
         let endComponents = calendar.dateComponents([.year, .month, .day], from: lastNightEnd)
-        XCTAssertEqual(todayComponents.year, endComponents.year)
-        XCTAssertEqual(todayComponents.month, endComponents.month)
-        XCTAssertEqual(todayComponents.day, endComponents.day)
+        #expect(todayComponents.year == endComponents.year)
+        #expect(todayComponents.month == endComponents.month)
+        #expect(todayComponents.day == endComponents.day)
     }
 }
