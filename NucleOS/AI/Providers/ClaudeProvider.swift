@@ -8,8 +8,6 @@
 //  Full implementation is deferred to a later milestone.
 //
 
-import Foundation
-
 // MARK: - ClaudeProvider
 
 /// Stub LLM provider for Anthropic Claude (provider #3 in NucleOS priority order).
@@ -18,13 +16,13 @@ import Foundation
 /// `isAvailable` always returns `false` and `complete(prompt:)` throws
 /// `LLMProviderError.notImplemented`. No API keys are read or stored by this stub.
 ///
-/// The Keychain service identifier for the Claude API key is ``keychainService``.
+/// The Keychain account key for the Claude API key is ``keychainAccountKey``.
 struct ClaudeProvider: LLMProvider {
 
     // MARK: - Constants
 
-    /// Keychain service identifier used to store the Claude API key.
-    static let keychainService = "com.f4tdaddy.nucleos.claude-api-key"
+    /// Keychain account key used with the shared NucleOS Keychain service.
+    static let keychainAccountKey = KeychainHelper.anthropicAPIKey
 
     // MARK: - LLMProvider
 

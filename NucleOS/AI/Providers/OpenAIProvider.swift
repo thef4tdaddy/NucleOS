@@ -8,8 +8,6 @@
 //  Full implementation is deferred to a later milestone.
 //
 
-import Foundation
-
 // MARK: - OpenAIProvider
 
 /// Stub LLM provider for OpenAI (provider #4 in NucleOS priority order).
@@ -18,13 +16,13 @@ import Foundation
 /// `isAvailable` always returns `false` and `complete(prompt:)` throws
 /// `LLMProviderError.notImplemented`. No API keys are read or stored by this stub.
 ///
-/// The Keychain service identifier for the OpenAI API key is ``keychainService``.
+/// The Keychain account identifier for the OpenAI API key is ``keychainAccountKey``.
 struct OpenAIProvider: LLMProvider {
 
     // MARK: - Constants
 
-    /// Keychain service identifier used to store the OpenAI API key.
-    static let keychainService = "com.f4tdaddy.nucleos.openai-api-key"
+    /// Keychain account identifier used to reference the OpenAI API key.
+    static let keychainAccountKey = KeychainHelper.openAIAPIKey
 
     // MARK: - LLMProvider
 
