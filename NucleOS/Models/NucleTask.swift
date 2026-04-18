@@ -25,6 +25,8 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var priority: Priority
 
     enum Priority: Int, CaseIterable, Hashable, Sendable {
+        /// No priority set (RFC 5545 value 0 / undefined).
+        case none = -1
         case low = 0
         /// Medium importance (RFC 5545 value 5).
         case medium = 1

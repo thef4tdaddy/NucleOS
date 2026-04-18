@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		SENTRY001SENTRY001SENTRY01 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SENTRY002SENTRY002SENTRY02 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */,
+				SENTRY001SENTRY001SENTRY01 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +81,7 @@
 			);
 			name = NucleOS;
 			packageProductDependencies = (
+				SENTRY002SENTRY002SENTRY02 /* Sentry */,
 			);
 			productName = NucleOS;
 			productReference = 0D4E4E902F9180730069B310 /* NucleOS.app */;
@@ -139,6 +142,9 @@
 			productRefGroup = 0D4E4E442F9123CA0069B310;
 			projectDirPath = "";
 			projectRoot = "";
+			packages = (
+				SENTRY003SENTRY003SENTRY03 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+			);
 			targets = (
 				0D4E4E4C2F9123CA0069B310 /* NucleOS */,
 				0D4E4E942F9180730069B310 /* NucleOSTests */,
@@ -335,6 +341,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_SENTRY_DSN = "REPLACE_WITH_YOUR_SENTRY_DSN";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -386,6 +393,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_SENTRY_DSN = "REPLACE_WITH_YOUR_SENTRY_DSN";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -516,6 +524,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		SENTRY003SENTRY003SENTRY03 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		SENTRY002SENTRY002SENTRY02 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SENTRY003SENTRY003SENTRY03 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 	};
 	rootObject = 0D4E4E452F9123CA0069B310 /* Project object */;
 }
