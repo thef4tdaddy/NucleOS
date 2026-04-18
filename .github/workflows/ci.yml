@@ -72,7 +72,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensures Codecov detects base commits
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
@@ -101,7 +101,7 @@ jobs:
               -instr-profile="$PROF" \
               "$BIN" > coverage.lcov
             echo "✅ Coverage generated with fixed paths"
-            head -10 coverage.lcov  # Debug: show first paths
+            head -10 coverage.lcov
           else
             echo "❌ Coverage files not found"
             touch coverage.lcov
@@ -123,7 +123,7 @@ jobs:
           path: |
             test.log
             TestResults.xcresult
-            coverage.lcov  # Now downloadable for debugging
+            coverage.lcov
 
   swiftlint:
     name: SwiftLint
@@ -151,15 +151,8 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
             echo "violations=" >> $GITHUB_OUTPUT
           else
-            echo "status=failure" >> $GITHUB_OUTPUT"
-            VIOLATIONS=$(cat swiftlint.json | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          lines = []
-          for v in data[:20]:
-            lines.append(f\"{v['file'].split('/')[-1]}:{v['line']} — {v['reason']} ({v['severity']})\")
-          print('\\n'.join(lines))
-          " 2>/dev/null || echo "See artifacts for details")
+            echo "status=failure" >> $GITHUB_OUTPUT
+            VIOLATIONS=$(cat swiftlint.json | python3 -c "import json, sys; data = json.load(sys.stdin); [print(f'{v[\"file\"].split(\"/\")[-1]}:{v[\"line\"]} — {v[\"reason\"]} ({v[\"severity\"]})') for v in data[:20]]" 2>/dev/null || echo "See artifacts for details")
             echo "violations<<EOF" >> $GITHUB_OUTPUT
             echo "$VIOLATIONS" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
