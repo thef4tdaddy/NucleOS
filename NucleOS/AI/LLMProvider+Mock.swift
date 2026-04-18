@@ -6,8 +6,6 @@
 //  Must not be used in production code paths.
 //
 
-import Foundation
-
 // MARK: - MockLLMProvider
 
 /// A test double for `LLMProvider` that returns a hardcoded completion string.
