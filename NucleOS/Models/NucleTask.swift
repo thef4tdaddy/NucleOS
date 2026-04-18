@@ -25,7 +25,9 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var priority: Priority
 
     enum Priority: Int, CaseIterable, Hashable, Sendable {
-        /// No priority set (RFC 5545 value 0 / undefined).
+        /// No priority set — maps to EventKit priority 0 ("none").
+        /// Raw value -1 is an internal ordering sentinel; it does not directly
+        /// correspond to an RFC 5545 PRIORITY value.
         case none = -1
         case low = 0
         /// Medium importance (RFC 5545 value 5).

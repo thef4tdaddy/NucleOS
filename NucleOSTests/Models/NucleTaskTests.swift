@@ -5,6 +5,7 @@
 //  Swift Testing suite for the NucleTask model.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 
@@ -17,7 +18,7 @@ struct NucleTaskModelTests {
     func identifiableConformance() {
         let task = NucleTask(title: "Test")
         // Identifiable conformance — id is a UUID
-        #expect(task.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000"))
+        #expect(task.id.uuidString != "00000000-0000-0000-0000-000000000000")
     }
 
     @Test("Two tasks created independently have different ids")

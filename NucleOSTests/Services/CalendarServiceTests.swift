@@ -5,11 +5,12 @@
 //  Swift Testing suite for CalendarService — mock-only, zero real Apple framework calls.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 
 @Suite("Calendar Service")
-struct CalendarServiceTests {
+struct CalendarServiceSwiftTests {
 
     // MARK: - fetchTodayEvents
 
@@ -75,7 +76,7 @@ struct CalendarServiceTests {
     func upcomingEventsAreInFutureOrToday() async throws {
         let service = MockCalendarService()
         let events = try await service.fetchUpcomingEvents(days: 7)
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: Date()))
         for event in events {
             #expect(event.startDate > yesterday)
         }

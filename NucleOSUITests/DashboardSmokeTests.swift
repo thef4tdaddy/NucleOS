@@ -4,9 +4,6 @@
 //
 //  Swift Testing UI smoke tests for the Dashboard.
 //  Requires NucleOSUITests target to be added to the Xcode project.
-//  XCUIApplication is supplied by the XCTest UI framework which is implicitly
-//  linked for UI test bundles — no explicit `import XCTest` needed in Swift 5.9+
-//  when the target is configured as a UI test bundle.
 //
 
 import Testing
@@ -15,11 +12,7 @@ import XCTest
 @Suite("Dashboard Smoke Tests")
 final class DashboardSmokeTests {
 
-    var app: XCUIApplication!
-
-    init() {
-        app = XCUIApplication()
-    }
+    let app = XCUIApplication()
 
     // MARK: - Launch
 

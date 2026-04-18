@@ -5,11 +5,12 @@
 //  Swift Testing suite for HealthService — mock-only, zero real HealthKit calls.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 
 @Suite("Health Service")
-struct HealthServiceTests {
+struct HealthServiceSwiftTests {
 
     // MARK: - fetchSnapshot
 

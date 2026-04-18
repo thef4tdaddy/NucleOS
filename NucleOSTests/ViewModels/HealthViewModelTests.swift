@@ -11,7 +11,7 @@ import Testing
 
 @Suite("Health ViewModel")
 @MainActor
-struct HealthViewModelTests {
+struct HealthViewModelSwiftTests {
 
     // MARK: - Initial state
 

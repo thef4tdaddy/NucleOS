@@ -5,6 +5,7 @@
 //  Swift Testing suite for the NucleEvent model.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 
@@ -16,7 +17,7 @@ struct NucleEventModelTests {
     @Test("NucleEvent conforms to Identifiable with UUID id")
     func identifiableConformance() {
         let event = NucleEvent(title: "Test", startDate: Date(), endDate: Date())
-        #expect(event.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000"))
+        #expect(event.id.uuidString != "00000000-0000-0000-0000-000000000000")
     }
 
     @Test("Two events created independently have different ids")

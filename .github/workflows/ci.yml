@@ -84,14 +84,15 @@ jobs:
             -destination 'platform=macOS' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
+            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
           exit ${PIPESTATUS[0]}
 
       - name: Convert coverage to lcov
         if: always()
         run: |
-          PROF=$(find TestResults.xcresult -name '*.profdata' 2>/dev/null | head -1)
-          BIN=$(find . -name 'NucleOS' -type f -path '*/Debug/*' 2>/dev/null | head -1)
+          PROF=$(find DerivedData -name '*.profdata' 2>/dev/null | head -1)
+          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\.dSYM' | head -1)
           if [ -n "$PROF" ] && [ -n "$BIN" ]; then
             xcrun llvm-cov export \
               -format=lcov \

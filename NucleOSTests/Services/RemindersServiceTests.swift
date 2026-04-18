@@ -5,11 +5,12 @@
 //  Swift Testing suite for RemindersService — mock-only, zero real Apple framework calls.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 
 @Suite("Reminders Service")
-struct RemindersServiceTests {
+struct RemindersServiceSwiftTests {
 
     // MARK: - fetchTasks: basic
 
@@ -25,7 +26,7 @@ struct RemindersServiceTests {
         let service = MockRemindersService()
         let tasks = try await service.fetchTasks()
         for task in tasks {
-            #expect(task.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000"))
+            #expect(task.id.uuidString != "00000000-0000-0000-0000-000000000000")
         }
     }
 
@@ -38,15 +39,13 @@ struct RemindersServiceTests {
         }
     }
 
-    @Test("fetchTasks returns tasks with valid isCompleted")
+    @Test("fetchTasks returns tasks with valid isCompleted — totals are consistent")
     func fetchTasksHaveIsCompleted() async throws {
         let service = MockRemindersService()
         let tasks = try await service.fetchTasks()
         let completedCount = tasks.filter(\.isCompleted).count
         let incompleteCount = tasks.filter { !$0.isCompleted }.count
-        // Mock data has both completed and incomplete tasks
-        #expect(completedCount >= 0)
-        #expect(incompleteCount >= 0)
+        #expect(completedCount + incompleteCount == tasks.count)
     }
 
     @Test("completed tasks are flagged correctly")
