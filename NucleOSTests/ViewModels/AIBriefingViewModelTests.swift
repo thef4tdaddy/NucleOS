@@ -97,4 +97,39 @@ struct AIBriefingViewModelTests {
             Issue.record("Expected .loaded, got \(vm.state)")
         }
     }
+
+    // MARK: - Health snapshot wiring
+
+    @Test("healthSnapshot is nil by default")
+    func healthSnapshotNilByDefault() {
+        let vm = AIBriefingViewModel(service: MockAIBriefingService())
+        #expect(vm.healthSnapshot == nil)
+    }
+
+    @Test("healthSnapshot can be set")
+    func healthSnapshotCanBeSet() {
+        let vm = AIBriefingViewModel(service: MockAIBriefingService())
+        vm.healthSnapshot = MockData.healthSnapshot
+        #expect(vm.healthSnapshot != nil)
+    }
+
+    @Test("isHealthSummaryEnabled defaults to false")
+    func isHealthSummaryEnabledDefaultsFalse() {
+        UserDefaults.standard.removeObject(forKey: AIBriefingService.healthSummaryEnabledKey)
+        let vm = AIBriefingViewModel(service: MockAIBriefingService())
+        #expect(!vm.isHealthSummaryEnabled)
+    }
+
+    @Test("generate succeeds with health snapshot set and health enabled")
+    func generateSucceedsWithHealthSnapshot() async {
+        UserDefaults.standard.set(true, forKey: AIBriefingService.healthSummaryEnabledKey)
+        defer { UserDefaults.standard.removeObject(forKey: AIBriefingService.healthSummaryEnabledKey) }
+        let vm = AIBriefingViewModel(service: MockAIBriefingService(), healthSnapshot: MockData.healthSnapshot)
+        await vm.generate()
+        if case .loaded(let text) = vm.state {
+            #expect(!text.isEmpty)
+        } else {
+            Issue.record("Expected .loaded, got \(vm.state)")
+        }
+    }
 }
