@@ -7,11 +7,12 @@
 //
 //  ACTOR ISOLATION
 //  ===============
-//  `LLMProvider` is not itself marked `@MainActor`.  Individual conforming types
+//  `LLMProvider` requirements are explicitly `nonisolated` so they do not inherit
+//  the project's default `@MainActor` isolation. Individual conforming types
 //  should apply `@MainActor` when they update UI state directly, or use
-//  `await MainActor.run { … }` at the call site.  The `complete(prompt:)` method
-//  is expected to be called from a background task; callers that update UI with
-//  the result must hop back to `@MainActor` themselves.
+//  `await MainActor.run { … }` at the call site. Callers that update UI with
+//  the result must hop back to `@MainActor` themselves. If work should start
+//  away from the current actor, prefer `Task.detached { … }` over `Task { … }`.
 //
 //  No UI code belongs in this file or in any conforming implementation file.
 //
@@ -38,15 +39,16 @@ import Foundation
 /// }
 /// ```
 ///
-/// **Actor isolation:** `complete(prompt:)` runs on whatever actor the caller
-/// is already on.  If the caller is `@MainActor`, the network hop will block
-/// that actor — prefer calling from a `Task { … }` detached from the main actor.
+/// **Actor isolation:** All `LLMProvider` requirements are `nonisolated`, so
+/// `complete(prompt:)` executes on whatever actor the caller is already on.
+/// If the caller is `@MainActor`, the work begins on that actor; prefer
+/// starting it from a detached task when you intentionally want background work.
 protocol LLMProvider {
 
     // MARK: Metadata
 
     /// Human-readable display name shown in the Settings UI (e.g. "MLX · Phi-3 mini").
-    var name: String { get }
+    nonisolated var name: String { get }
 
     /// `true` when the provider is ready to fulfil requests.
     ///
@@ -54,7 +56,7 @@ protocol LLMProvider {
     /// - A required API key has not been entered by the user.
     /// - The on-device model has not finished loading.
     /// - The provider has been disabled in Settings.
-    var isAvailable: Bool { get }
+    nonisolated var isAvailable: Bool { get }
 
     // MARK: Completion
 
@@ -65,5 +67,5 @@ protocol LLMProvider {
     /// - Returns: The provider's completion string.
     /// - Throws: Any error that prevents the provider from returning a completion
     ///   (e.g. network error, API key invalid, model not loaded).
-    func complete(prompt: String) async throws -> String
+    nonisolated func complete(prompt: String) async throws -> String
 }
