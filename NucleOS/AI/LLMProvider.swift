@@ -42,6 +42,13 @@ enum LLMProviderError: Error, LocalizedError {
     /// Inference started but failed before producing output.
     case inferenceError(underlying: Error)
 
+    /// A network-level failure occurred while communicating with a cloud provider
+    /// (e.g. no internet connection, DNS failure, TLS error, or timeout).
+    case networkError(underlying: Error)
+
+    /// The cloud provider returned HTTP 429 — the request quota has been exceeded.
+    case rateLimitExceeded
+
     // MARK: LocalizedError
 
     var errorDescription: String? {
@@ -54,6 +61,10 @@ enum LLMProviderError: Error, LocalizedError {
             return "LLM provider is not available in this environment."
         case .inferenceError(let error):
             return "Inference failed: \(error.localizedDescription)"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .rateLimitExceeded:
+            return "Rate limit exceeded. Please try again later."
         }
     }
 }

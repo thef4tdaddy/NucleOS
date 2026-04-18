@@ -550,7 +550,7 @@
 			repositoryURL = "https://github.com/ml-explore/mlx-swift-examples";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.21.0;
+				minimumVersion = 2.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
