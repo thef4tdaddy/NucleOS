@@ -2,12 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, main, NUC-*-v*]
   pull_request:
-    branches: [main, develop]
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    branches: [main, develop, NUC-*-v*]
 
 permissions:
   contents: read
@@ -29,6 +26,18 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
 
+      - name: Clear SwiftPM caches
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf DerivedData
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NucleOS.xcodeproj \
+            -scheme NucleOS
+
       - name: Build
         id: build
         shell: bash
@@ -49,7 +58,7 @@ jobs:
             echo "errors=" >> "$GITHUB_OUTPUT"
           else
             echo "status=failure" >> "$GITHUB_OUTPUT"
-            ERRORS=$(grep "error:" build.log | head -20 | sed 's/"/\\"/g' || true)
+            ERRORS=$(grep "error:" build.log | head -20 | sed 's/"/\\\\"/g' || true)
             echo "errors<<EOF" >> "$GITHUB_OUTPUT"
             echo "$ERRORS" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
@@ -60,7 +69,6 @@ jobs:
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
-
         with:
           name: build-log
           path: build.log
@@ -72,9 +80,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Clear SwiftPM caches
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf DerivedData
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NucleOS.xcodeproj \
+            -scheme NucleOS
 
       - name: Run tests with coverage
         run: |
@@ -87,22 +109,67 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
           exit ${PIPESTATUS[0]}
+      
+      - name: Debug coverage paths
+        if: always()
+        run: |
+          echo "=== PROFData files ==="
+          find DerivedData -name '*.profdata' -type f
+
+          echo "=== App bundles ==="
+          find DerivedData -name 'NucleOS.app' -type d
+
+          echo "=== Executables named NucleOS ==="
+          find DerivedData -type f -name 'NucleOS' | grep -v '\.dSYM' || true
 
       - name: Convert coverage to lcov
         if: always()
         run: |
-          PROF=$(find DerivedData -name '*.profdata' 2>/dev/null | head -1)
-          BIN=$(find DerivedData -name 'NucleOS' -type f 2>/dev/null | grep -v '\.dSYM' | head -1)
-          if [ -n "$PROF" ] && [ -n "$BIN" ]; then
-            xcrun llvm-cov export \
-              -format=lcov \
-              -instr-profile="$PROF" \
-              "$BIN" > coverage.lcov
-          else
-            echo "Coverage data not found — skipping lcov export"
+          PROF=$(find DerivedData/Build/ProfileData -name 'Coverage.profdata' -type f | head -1)
+          TEST_BUNDLES=$(find DerivedData/Build/Products/Debug -name '*.xctest' -type d)
+
+          echo "Using PROF=$PROF"
+          if [ ! -f "$PROF" ]; then
+            echo "❌ PROF file not found"
             touch coverage.lcov
+            exit 0
           fi
 
+          echo "Test bundles:"
+          echo "$TEST_BUNDLES"
+
+          rm -f coverage.lcov
+          if [ -z "$TEST_BUNDLES" ]; then
+            echo "❌ No *.xctest bundles found"
+            touch coverage.lcov
+            exit 0
+          fi
+
+          while IFS= read -r bundle; do
+            [ -z "$bundle" ] && continue
+            echo "Processing bundle: $bundle"
+            name=$(basename "$bundle" .xctest)
+            bin="$bundle/Contents/MacOS/$name"
+
+            if [ -f "$bin" ]; then
+              echo "  Exporting coverage for $bin"
+              xcrun llvm-cov export \
+                -format=lcov \
+                -instr-profile="$PROF" \
+                "$bin" >> coverage.lcov
+            else
+              echo "  ❌ Missing binary $bin"
+            fi
+          done <<< "$TEST_BUNDLES"
+
+          if [ ! -s coverage.lcov ]; then
+            echo "❌ coverage.lcov is empty"
+            touch coverage.lcov
+          else
+            echo "✅ Coverage generated"
+            head -20 coverage.lcov
+          fi
+          
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v4
@@ -119,6 +186,7 @@ jobs:
           path: |
             test.log
             TestResults.xcresult
+            coverage.lcov
 
   swiftlint:
     name: SwiftLint
@@ -147,14 +215,7 @@ jobs:
             echo "violations=" >> $GITHUB_OUTPUT
           else
             echo "status=failure" >> $GITHUB_OUTPUT
-            VIOLATIONS=$(cat swiftlint.json | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          lines = []
-          for v in data[:20]:
-            lines.append(f\"{v['file'].split('/')[-1]}:{v['line']} — {v['reason']} ({v['severity']})\")
-          print('\n'.join(lines))
-          " 2>/dev/null || echo "See artifacts for details")
+            VIOLATIONS=$(cat swiftlint.json | python3 -c "import json, sys; data = json.load(sys.stdin); [print(f'{v[\"file\"].split(\"/\")[-1]}:{v[\"line\"]} — {v[\"reason\"]} ({v[\"severity\"]})') for v in data[:20]]" 2>/dev/null || echo "See artifacts for details")
             echo "violations<<EOF" >> $GITHUB_OUTPUT
             echo "$VIOLATIONS" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT

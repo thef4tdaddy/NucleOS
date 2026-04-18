@@ -7,6 +7,11 @@ coverage:
     patch:
       default:
         target: 40%
+  fixes:
+    - "DerivedData::"          # Remove DerivedData prefix
+    - "/Users/runner::"        # Remove GitHub runner prefix
+    - "$(pwd)::"              # Remove current directory prefix
+
 comment:
   layout: "reach,diff,flags,files"
   behavior: default
