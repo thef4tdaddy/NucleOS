@@ -60,6 +60,12 @@ struct AIBriefingPanelView: View {
 
     // MARK: Init
 
+    /// Creates the panel with the given service.
+    ///
+    /// The default value creates an ``AIBriefingService`` backed by ``MLXProvider``.
+    /// ``MLXProvider`` loads its model lazily on the first `complete(prompt:)` call,
+    /// so this initialisation is inexpensive.
+    /// Pass a custom service (e.g. ``MockAIBriefingService``) in previews and tests.
     init(service: any AIBriefingServiceProtocol = AIBriefingService(provider: MLXProvider())) {
         self.service = service
     }
@@ -180,6 +186,8 @@ struct AIBriefingPanelView: View {
             state = .unavailable
             return
         }
+        // UserDefaults is accessed directly here until a dedicated Settings service
+        // is implemented in a future milestone.
         guard UserDefaults.standard.bool(forKey: AIBriefingService.autoGenerateKey) else {
             return
         }

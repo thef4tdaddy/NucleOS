@@ -87,7 +87,7 @@ struct MockAIBriefingService: AIBriefingServiceProtocol {
         self.hasAvailableProvider = hasAvailableProvider
     }
 
-    /// Returns ``MockData/aiBriefing`` regardless of provider state.
+    /// Returns ``MockData/aiBriefing`` when a provider is available.
     ///
     /// - Throws: ``AIBriefingError/noProviderAvailable`` when `hasAvailableProvider` is `false`.
     func generate() async throws -> String {
