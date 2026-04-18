@@ -31,7 +31,7 @@ struct GroqProviderTests {
     /// `defer`-compatible restore closure. Call this at the top of any test that
     /// mutates the Groq Keychain entry.
     private func snapshotGroqKey() -> String? {
-        try? KeychainHelper.get(key: KeychainHelper.groqAPIKey) ?? nil
+        try? KeychainHelper.get(key: KeychainHelper.groqAPIKey)
     }
 
     /// Restores the Groq Keychain entry to `previousValue`, or deletes the entry

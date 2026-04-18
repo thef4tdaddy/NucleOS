@@ -202,6 +202,12 @@ private struct GroqHTTPError: LocalizedError {
     let statusCode: Int
 
     var errorDescription: String? {
-        "Groq API returned unexpected HTTP status \(statusCode)."
+        switch statusCode {
+        case 400: return "Groq API returned HTTP 400 (Bad Request). Check the request format."
+        case 401, 403: return "Groq API returned HTTP \(statusCode) (Unauthorized). Verify your API key."
+        case 404: return "Groq API returned HTTP 404 (Not Found). The requested model or endpoint may not exist."
+        case 500...599: return "Groq API returned HTTP \(statusCode) (Server Error). Try again later."
+        default: return "Groq API returned unexpected HTTP status \(statusCode)."
+        }
     }
 }
