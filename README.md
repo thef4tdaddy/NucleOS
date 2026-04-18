@@ -2,6 +2,8 @@
 
 **Your life, one place.**
 
+[![codecov](https://codecov.io/gh/thef4tdaddy/NucleOS/branch/main/graph/badge.svg)](https://codecov.io/gh/thef4tdaddy/NucleOS)
+
 A macOS app that brings your calendar, tasks, health, and personal library together. Built for you, not for everyone.
 
 ---
