@@ -2,10 +2,10 @@
 //  AIBriefingComponents.swift
 //  NucleOS
 //
-//  AI briefing panel wired to AIBriefingService.
+//  AI briefing panel wired to AIBriefingViewModel / AIBriefingService.
 //
-//  UI STATES
-//  =========
+//  UI STATES  (driven by AIBriefingViewModel)
+//  ==========================================
 //  • idle       — provider available but briefing not yet requested; shows a generate button.
 //  • loading    — LLM call in progress; shows a spinner.
 //  • loaded     — briefing text returned by the service; shows prose output.
@@ -13,9 +13,10 @@
 //
 //  AUTO-GENERATE BEHAVIOUR
 //  =======================
-//  The panel fires a generation on `.task` only when the user has opted in via
+//  The panel fires a generation automatically only when the user has opted in via
 //  `AIBriefingService.autoGenerateKey` (UserDefaults bool, default `false`).
 //  All other invocations require an explicit tap of the "Generate Briefing" button.
+//  This decision lives in ``AIBriefingViewModel/initialise()``.
 //
 //  HEALTH SUMMARY SURFACE
 //  ======================
@@ -33,41 +34,28 @@
 
 import SwiftUI
 
-// MARK: - State
-
-private enum AIBriefingState {
-    case idle
-    case loading
-    case loaded(String)
-    case unavailable
-}
-
 // MARK: - Panel View
 
 /// Dashboard panel that displays a real AI-generated daily briefing.
 ///
-/// Inject a custom ``AIBriefingServiceProtocol`` for previews and tests.
+/// Inject a custom ``AIBriefingServiceProtocol`` via the view model initialiser
+/// for previews and tests.
 struct AIBriefingPanelView: View {
 
-    // MARK: Dependencies
+    // MARK: View model
 
-    private let service: any AIBriefingServiceProtocol
-
-    // MARK: State
-
-    @State private var state: AIBriefingState = .idle
-    @State private var lastUpdated: Date?
+    @StateObject private var viewModel: AIBriefingViewModel
 
     // MARK: Init
 
-    /// Creates the panel with the given service.
+    /// Creates the panel with the given view model.
     ///
-    /// The default value creates an ``AIBriefingService`` backed by ``MLXProvider``.
-    /// ``MLXProvider`` loads its model lazily on the first `complete(prompt:)` call,
-    /// so this initialisation is inexpensive.
-    /// Pass a custom service (e.g. ``MockAIBriefingService``) in previews and tests.
-    init(service: any AIBriefingServiceProtocol = AIBriefingService(provider: MLXProvider())) {
-        self.service = service
+    /// The default creates an ``AIBriefingViewModel`` backed by ``MLXProvider``,
+    /// which loads its model lazily on the first inference call.
+    /// Pass a custom view model (e.g. backed by ``MockAIBriefingService``) for
+    /// previews and tests.
+    init(viewModel: AIBriefingViewModel = AIBriefingViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     // MARK: Body
@@ -87,7 +75,7 @@ struct AIBriefingPanelView: View {
                 )
         )
         .task {
-            await initialise()
+            await viewModel.initialise()
         }
     }
 
@@ -105,25 +93,27 @@ struct AIBriefingPanelView: View {
 
             Spacer()
 
-            switch state {
+            switch viewModel.state {
             case .loading:
                 ProgressView()
                     .controlSize(.small)
                     .tint(.accentLavender)
 
             case .loaded:
-                if let updated = lastUpdated {
+                if let updated = viewModel.lastUpdated {
                     Text(relativeTime(from: updated))
                         .font(.system(size: 11))
                         .foregroundColor(.textMuted)
                 }
 
-                Button(action: { Task { await generate() } }) {
+                Button(action: { Task { await viewModel.generate() } }) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 11))
                         .foregroundColor(.textMuted)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Regenerate briefing")
+                .accessibilityHint("Generates a new AI briefing")
 
             default:
                 EmptyView()
@@ -133,7 +123,7 @@ struct AIBriefingPanelView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        switch state {
+        switch viewModel.state {
         case .idle:
             idleView
         case .loading:
@@ -146,7 +136,7 @@ struct AIBriefingPanelView: View {
     }
 
     private var idleView: some View {
-        Button(action: { Task { await generate() } }) {
+        Button(action: { Task { await viewModel.generate() } }) {
             Label("Generate Briefing", systemImage: "sparkles")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.accentPrimary)
@@ -176,35 +166,6 @@ struct AIBriefingPanelView: View {
         Text("Enable AI in Settings to see your briefing.")
             .font(.system(size: 13))
             .foregroundColor(.textMuted)
-    }
-
-    // MARK: Actions
-
-    /// Called once on `.task`: sets unavailable state or auto-generates if opted in.
-    private func initialise() async {
-        guard service.hasAvailableProvider else {
-            state = .unavailable
-            return
-        }
-        // UserDefaults is accessed directly here until a dedicated Settings service
-        // is implemented in a future milestone.
-        guard UserDefaults.standard.bool(forKey: AIBriefingService.autoGenerateKey) else {
-            return
-        }
-        await generate()
-    }
-
-    /// Triggers a generation regardless of current state.
-    private func generate() async {
-        state = .loading
-        do {
-            let briefing = try await service.generate()
-            lastUpdated = Date()
-            state = .loaded(briefing)
-        } catch {
-            // On error, return to idle so the user can retry.
-            state = .idle
-        }
     }
 
     // MARK: Helpers
@@ -239,16 +200,19 @@ struct BriefingBullet: View {
 
 // MARK: - Previews
 
-#Preview("Loaded") {
-    AIBriefingPanelView(service: MockAIBriefingService())
+#Preview("Idle") {
+    AIBriefingPanelView(viewModel: AIBriefingViewModel(service: MockAIBriefingService()))
         .padding()
         .background(Color.backgroundPrimary)
         .frame(width: 500)
 }
 
 #Preview("Unavailable") {
-    AIBriefingPanelView(service: MockAIBriefingService(hasAvailableProvider: false))
-        .padding()
-        .background(Color.backgroundPrimary)
-        .frame(width: 500)
+    AIBriefingPanelView(
+        viewModel: AIBriefingViewModel(service: MockAIBriefingService(hasAvailableProvider: false))
+    )
+    .padding()
+    .background(Color.backgroundPrimary)
+    .frame(width: 500)
 }
+

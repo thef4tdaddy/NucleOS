@@ -20,7 +20,7 @@ protocol AIBriefingServiceProtocol {
 // MARK: - Errors
 
 /// Errors that can be thrown by ``AIBriefingServiceProtocol`` implementations.
-enum AIBriefingError: Error, LocalizedError {
+enum AIBriefingError: Error, LocalizedError, Equatable {
     /// No LLM provider is configured or available.
     case noProviderAvailable
 
