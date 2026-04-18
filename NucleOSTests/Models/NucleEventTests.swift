@@ -48,8 +48,8 @@ struct NucleEventModelTests {
 
     @Test("Duration is calculable from startDate and endDate")
     func durationCalculable() {
-        let start = Date()
-        let end = Date(timeIntervalSinceNow: 3600)
+        let start = Date(timeIntervalSince1970: 1700000000)
+        let end = start.addingTimeInterval(3600)
         let event = NucleEvent(title: "One Hour", startDate: start, endDate: end)
         let duration = event.endDate.timeIntervalSince(event.startDate)
         #expect(duration == 3600.0)
@@ -57,8 +57,8 @@ struct NucleEventModelTests {
 
     @Test("Duration of 90-minute event is 5400 seconds")
     func ninetyMinuteDuration() {
-        let start = Date()
-        let end = Date(timeIntervalSinceNow: 5400)
+        let start = Date(timeIntervalSince1970: 1700000000)
+        let end = start.addingTimeInterval(5400)
         let event = NucleEvent(title: "Standup", startDate: start, endDate: end)
         let duration = event.endDate.timeIntervalSince(event.startDate)
         #expect(duration == 5400.0)

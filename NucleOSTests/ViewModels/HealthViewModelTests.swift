@@ -77,6 +77,8 @@ struct HealthViewModelSwiftTests {
     func evaluateDeniedClearsSnapshot() async {
         let auth = MockHealthKitAuthorizationService(checkStatusResult: .denied)
         let vm = HealthViewModel(service: MockHealthService(), authService: auth)
+        // Set a non-nil snapshot to verify it gets cleared
+        vm.snapshot = HealthSnapshot(steps: 5000, heartRate: 72.0, sleepDuration: 28800, activeCalories: 400)
         await vm.evaluatePermissionState()
         #expect(vm.permissionState == .denied)
         #expect(vm.snapshot == nil)
@@ -144,6 +146,8 @@ struct HealthViewModelSwiftTests {
     func requestAuthorizationDenied() async {
         let auth = MockHealthKitAuthorizationService(requestAuthorizationResult: .denied)
         let vm = HealthViewModel(service: MockHealthService(), authService: auth)
+        // Set a non-nil snapshot to verify it gets cleared
+        vm.snapshot = HealthSnapshot(steps: 5000, heartRate: 72.0, sleepDuration: 28800, activeCalories: 400)
         await vm.requestAuthorization()
         #expect(vm.permissionState == .denied)
         #expect(vm.snapshot == nil)

@@ -52,7 +52,48 @@ enum SentryConfig {
                 if sensitiveCategories.contains(breadcrumb.category ?? "") {
                     return nil
                 }
+                // Redact breadcrumb fields that may contain PII
+                breadcrumb.message = nil
+                if var data = breadcrumb.data {
+                    data.removeValue(forKey: "title")
+                    data.removeValue(forKey: "task")
+                    data.removeValue(forKey: "input")
+                    breadcrumb.data = data
+                }
                 return breadcrumb
+            }
+
+            // Privacy: scrub event-level fields and all breadcrumbs before sending.
+            options.beforeSend = { event in
+                // Nil out event-level PII fields
+                event.message = nil
+                event.user = nil
+
+                // Clear contexts, extra, and tags that may contain PII
+                if event.context != nil {
+                    event.context = [:]
+                }
+                if event.extra != nil {
+                    event.extra = [:]
+                }
+                if event.tags != nil {
+                    event.tags = [:]
+                }
+
+                // Redact all breadcrumbs in the event
+                if let breadcrumbs = event.breadcrumbs {
+                    for breadcrumb in breadcrumbs {
+                        breadcrumb.message = nil
+                        if var data = breadcrumb.data {
+                            data.removeValue(forKey: "title")
+                            data.removeValue(forKey: "task")
+                            data.removeValue(forKey: "input")
+                            breadcrumb.data = data
+                        }
+                    }
+                }
+
+                return event
             }
         }
 #endif

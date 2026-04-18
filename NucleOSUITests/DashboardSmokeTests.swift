@@ -28,7 +28,7 @@ final class DashboardSmokeTests {
         app.launch()
         // The Dashboard content area should exist
         let dashboard = app.otherElements["DashboardView"]
-        #expect(dashboard.exists || app.windows.firstMatch.exists)
+        #expect(dashboard.exists)
         app.terminate()
     }
 
@@ -36,7 +36,7 @@ final class DashboardSmokeTests {
     func healthStripVisible() {
         app.launch()
         let healthStrip = app.otherElements["HealthStripView"]
-        #expect(healthStrip.waitForExistence(timeout: 3) || app.windows.firstMatch.exists)
+        #expect(healthStrip.waitForExistence(timeout: 3))
         app.terminate()
     }
 
@@ -45,7 +45,7 @@ final class DashboardSmokeTests {
         app.launch()
         // NavigationSplitView sidebar should have at least one item
         let sidebar = app.splitGroups.firstMatch
-        #expect(sidebar.exists || app.windows.firstMatch.exists)
+        #expect(sidebar.exists)
         app.terminate()
     }
 
@@ -53,7 +53,7 @@ final class DashboardSmokeTests {
     func tasksPanelVisible() {
         app.launch()
         let tasksPanel = app.otherElements["TasksPanel"]
-        #expect(tasksPanel.waitForExistence(timeout: 3) || app.windows.firstMatch.exists)
+        #expect(tasksPanel.waitForExistence(timeout: 3))
         app.terminate()
     }
 
@@ -61,7 +61,7 @@ final class DashboardSmokeTests {
     func calendarPanelVisible() {
         app.launch()
         let calendarPanel = app.otherElements["CalendarPanel"]
-        #expect(calendarPanel.waitForExistence(timeout: 3) || app.windows.firstMatch.exists)
+        #expect(calendarPanel.waitForExistence(timeout: 3))
         app.terminate()
     }
 
@@ -69,7 +69,7 @@ final class DashboardSmokeTests {
     func aiBriefingSectionVisible() {
         app.launch()
         let aiBriefing = app.otherElements["AIBriefingView"]
-        #expect(aiBriefing.waitForExistence(timeout: 3) || app.windows.firstMatch.exists)
+        #expect(aiBriefing.waitForExistence(timeout: 3))
         app.terminate()
     }
 }
