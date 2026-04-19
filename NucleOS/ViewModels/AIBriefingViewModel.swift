@@ -6,6 +6,7 @@
 //  Owns all async generation logic and state, keeping the view layer thin.
 //
 
+import Combine
 import Foundation
 
 // MARK: - AIBriefingState

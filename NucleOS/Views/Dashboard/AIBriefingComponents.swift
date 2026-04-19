@@ -43,6 +43,7 @@ import SwiftUI
 ///
 /// Pass a ``HealthSnapshot`` to include privacy-safe health context in the
 /// generated briefing when the user has enabled AI health summaries in Settings.
+@MainActor
 struct AIBriefingPanelView: View {
 
     // MARK: View model
@@ -56,21 +57,27 @@ struct AIBriefingPanelView: View {
 
     // MARK: Init
 
-    /// Creates the panel with the given view model and optional health snapshot.
+    /// Creates the panel wired to the default production view model.
     ///
-    /// The default creates an ``AIBriefingViewModel`` backed by ``MLXProvider``,
-    /// which loads its model lazily on the first inference call.
-    /// Pass a custom view model (e.g. backed by ``MockAIBriefingService``) for
-    /// previews and tests.
+    /// Instantiates an ``AIBriefingViewModel`` backed by the real ``AIBriefingService``
+    /// (MLX → Groq → Claude → OpenAI priority order). The model loads lazily on the
+    /// first inference call.
+    ///
+    /// - Parameter healthSnapshot: Optional aggregate health metrics forwarded to the
+    ///   view model. When non-nil and the user has enabled AI health summaries, these
+    ///   values are forwarded (via ``DefaultHealthSummaryPromptBuilder``) to the active
+    ///   ``LLMProvider`` as privacy-safe health context.
+    init(healthSnapshot: HealthSnapshot? = nil) {
+        _viewModel = StateObject(wrappedValue: AIBriefingViewModel())
+        self.healthSnapshot = healthSnapshot
+    }
+
+    /// Creates the panel with an injected view model — use in previews and tests.
     ///
     /// - Parameters:
     ///   - viewModel: The view model that drives panel state.
-    ///   - healthSnapshot: Optional aggregate health metrics passed to the view
-    ///     model. When non-nil and the user has enabled AI health summaries, these
-    ///     values are forwarded (via ``DefaultHealthSummaryPromptBuilder``) to the
-    ///     active ``LLMProvider`` as privacy-safe health context.
-    @MainActor
-    init(viewModel: AIBriefingViewModel = AIBriefingViewModel(), healthSnapshot: HealthSnapshot? = nil) {
+    ///   - healthSnapshot: Optional aggregate health metrics passed to the view model.
+    init(viewModel: AIBriefingViewModel, healthSnapshot: HealthSnapshot? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.healthSnapshot = healthSnapshot
     }

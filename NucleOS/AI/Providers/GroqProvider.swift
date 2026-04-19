@@ -62,8 +62,7 @@ struct GroqProvider: LLMProvider {
     /// Returns `false` silently when the key is absent — no prompt, no crash.
     nonisolated var isAvailable: Bool {
         guard let rawKey = try? KeychainHelper.get(key: KeychainHelper.groqAPIKey),
-              let key = rawKey,
-              !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+              !rawKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
         return true

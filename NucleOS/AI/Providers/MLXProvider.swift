@@ -118,7 +118,7 @@ actor MLXProvider: LLMProvider {
                     input: lmInput,
                     parameters: GenerateParameters(),
                     context: context
-                ) { _ in .more }
+                ) { (_: [Int]) in .more }
                 return result.output
             }
             return output

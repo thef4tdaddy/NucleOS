@@ -56,7 +56,7 @@ struct DefaultHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         lines.append("- Observations only. Never give advice or recommendations.")
         lines.append("- Be celebratory when a goal is met (e.g. \"Steps goal hit today 🎉\").")
         lines.append("- Be neutral when a goal is not met (e.g. \"1,766 steps remaining to hit your goal.\").")
-        lines.append("- No population comparisons (e.g. no \"for your age\" language).")
+        lines.append("- No population comparisons or statistical benchmarks.")
         lines.append("- No trend language that implies medical significance.")
         lines.append("- One sentence only.")
 
