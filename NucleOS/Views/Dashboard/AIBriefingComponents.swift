@@ -69,6 +69,7 @@ struct AIBriefingPanelView: View {
     ///     model. When non-nil and the user has enabled AI health summaries, these
     ///     values are forwarded (via ``DefaultHealthSummaryPromptBuilder``) to the
     ///     active ``LLMProvider`` as privacy-safe health context.
+    @MainActor
     init(viewModel: AIBriefingViewModel = AIBriefingViewModel(), healthSnapshot: HealthSnapshot? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.healthSnapshot = healthSnapshot

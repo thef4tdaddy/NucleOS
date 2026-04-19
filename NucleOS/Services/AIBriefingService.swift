@@ -50,7 +50,24 @@ enum AIBriefingError: Error, LocalizedError, Equatable {
 
 // MARK: - Real Implementation
 
-/// Concrete implementation that delegates to any ``LLMProvider``.
+/// Concrete implementation that routes briefing requests to the first available ``LLMProvider``.
+///
+/// Providers are evaluated in the order they appear in the `providers` array.  The service
+/// picks the first one where `isAvailable == true` at call time, so availability is
+/// re-evaluated on every call — no caching or manual re-configuration required.
+///
+/// **Priority order (default production init)**
+/// 1. MLX · Phi-3 mini — on-device, zero network, Apple Silicon only
+/// 2. Groq — cloud, free tier, requires Keychain API key
+/// 3. Claude — cloud, premium, requires Keychain API key
+/// 4. OpenAI — cloud, requires Keychain API key
+///
+/// **Injection (tests & previews)**
+/// ```swift
+/// let service = AIBriefingService(providers: [MockLLMProvider()])
+/// // or single-provider convenience:
+/// let service = AIBriefingService(provider: MockLLMProvider())
+/// ```
 struct AIBriefingService: AIBriefingServiceProtocol {
 
     // MARK: Constants
@@ -68,35 +85,74 @@ struct AIBriefingService: AIBriefingServiceProtocol {
 
     // MARK: Private
 
-    private let provider: any LLMProvider
+    private let providers: [any LLMProvider]
     private let promptBuilder: any HealthSummaryPromptBuilder
 
     // MARK: Init
 
+    /// Default production init.
+    ///
+    /// Configures all four providers in priority order:
+    /// MLX (on-device) → Groq → Claude → OpenAI.
+    /// The service automatically selects the first provider where `isAvailable == true`.
+    init(promptBuilder: any HealthSummaryPromptBuilder = DefaultHealthSummaryPromptBuilder()) {
+        self.providers = [MLXProvider(), GroqProvider(), ClaudeProvider(), OpenAIProvider()]
+        self.promptBuilder = promptBuilder
+    }
+
+    /// Creates an instance with an explicit ordered list of providers.
+    ///
+    /// The service selects the first provider where `isAvailable == true`.
+    /// Pass providers in descending priority order (most preferred first).
+    /// An empty array is valid and will always produce ``AIBriefingError/noProviderAvailable``.
+    ///
+    /// - Parameters:
+    ///   - providers: Ordered list of providers. The service picks the first available one.
+    ///   - promptBuilder: Converts a ``HealthSnapshot`` into a safe prompt string.
+    init(
+        providers: [any LLMProvider],
+        promptBuilder: any HealthSummaryPromptBuilder = DefaultHealthSummaryPromptBuilder()
+    ) {
+        self.providers = providers
+        self.promptBuilder = promptBuilder
+    }
+
+    /// Convenience init for a single provider. Wraps `provider` in a one-element array.
     init(
         provider: any LLMProvider,
         promptBuilder: any HealthSummaryPromptBuilder = DefaultHealthSummaryPromptBuilder()
     ) {
-        self.provider = provider
+        self.providers = [provider]
         self.promptBuilder = promptBuilder
+    }
+
+    // MARK: Routing
+
+    /// Returns the first provider in `providers` where `isAvailable == true`, or `nil` when none is ready.
+    private var activeProvider: (any LLMProvider)? {
+        providers.first { $0.isAvailable }
     }
 
     // MARK: AIBriefingServiceProtocol
 
-    var hasAvailableProvider: Bool { provider.isAvailable }
+    /// `true` when at least one provider in the ordered list is available.
+    var hasAvailableProvider: Bool { activeProvider != nil }
 
-    /// Generates a daily briefing by sending a prompt to the active ``LLMProvider``.
+    /// Generates a daily briefing by routing the request to the first available ``LLMProvider``.
     ///
-    /// When `healthSnapshot` is non-nil, the prompt includes privacy-safe health
-    /// context produced by the ``HealthSummaryPromptBuilder``. The caller is
-    /// responsible for verifying user opt-in before passing a non-nil snapshot.
+    /// Provider availability is evaluated at call time so a provider that becomes available
+    /// after the service is initialised is picked up automatically on the next call.
     ///
-    /// - Parameter healthSnapshot: Optional aggregate health metrics to include as
-    ///   context. Only aggregate values from ``HealthSnapshot`` ever reach the LLM —
+    /// When `healthSnapshot` is non-nil, the prompt includes privacy-safe health context
+    /// produced by the ``HealthSummaryPromptBuilder``. The caller is responsible for
+    /// verifying user opt-in before passing a non-nil snapshot.
+    ///
+    /// - Parameter healthSnapshot: Optional aggregate health metrics to include as context.
+    ///   Only aggregate values from ``HealthSnapshot`` ever reach the LLM —
     ///   raw HealthKit types are never forwarded.
-    /// - Throws: ``AIBriefingError/noProviderAvailable`` when `hasAvailableProvider` is `false`.
+    /// - Throws: ``AIBriefingError/noProviderAvailable`` when no provider is available.
     func generate(healthSnapshot: HealthSnapshot?) async throws -> String {
-        guard provider.isAvailable else {
+        guard let provider = activeProvider else {
             throw AIBriefingError.noProviderAvailable
         }
 
