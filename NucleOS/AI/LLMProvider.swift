@@ -28,7 +28,8 @@ import Foundation
 /// in a uniform way without depending on provider-specific error types.
 enum LLMProviderError: Error, LocalizedError {
 
-    /// No model is installed at the configured path, or no path has been set.
+    /// A model path was configured, but no model exists at that path on disk.
+    /// Unset or empty paths should be reported as `unavailable` instead.
     case modelNotFound(path: String)
 
     /// The model exists on disk but could not be loaded (e.g. corrupt weights,
