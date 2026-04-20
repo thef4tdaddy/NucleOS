@@ -72,6 +72,11 @@ struct AIBriefingService: AIBriefingServiceProtocol {
 
     // MARK: Constants
 
+    /// UserDefaults key for the user's chosen LLM provider.
+    /// Value type: `String` — raw value of ``LLMProviderOption``.
+    /// Defaults to ``LLMProviderOption/mlx`` when absent.
+    static let selectedProviderKey = "selectedLLMProvider"
+
     /// UserDefaults key for the opt-in auto-generate-on-appear setting.
     /// When `true`, the AI briefing panel generates a briefing automatically on appear.
     /// Defaults to `false` — generation always requires an explicit user action unless opted in.
@@ -128,9 +133,27 @@ struct AIBriefingService: AIBriefingServiceProtocol {
 
     // MARK: Routing
 
-    /// Returns the first provider in `providers` where `isAvailable == true`, or `nil` when none is ready.
+    /// Returns the provider matching the user's UserDefaults selection when it is available.
+    /// Falls back to the first available provider in priority order when the selected
+    /// provider is unavailable (e.g. no API key, MLX not installed).
     private var activeProvider: (any LLMProvider)? {
-        providers.first { $0.isAvailable }
+        if let selected = userSelectedProvider, selected.isAvailable {
+            return selected
+        }
+        return providers.first { $0.isAvailable }
+    }
+
+    /// Returns the provider instance that corresponds to the user's persisted
+    /// ``LLMProviderOption`` selection, or `nil` when no preference is stored.
+    private var userSelectedProvider: (any LLMProvider)? {
+        let raw = UserDefaults.standard.string(forKey: AIBriefingService.selectedProviderKey) ?? ""
+        guard let option = LLMProviderOption(rawValue: raw) else { return nil }
+        switch option {
+        case .mlx:       return providers.first { $0 is MLXProvider }
+        case .groq:      return providers.first { $0 is GroqProvider }
+        case .anthropic: return providers.first { $0 is ClaudeProvider }
+        case .openai:    return providers.first { $0 is OpenAIProvider }
+        }
     }
 
     // MARK: AIBriefingServiceProtocol
