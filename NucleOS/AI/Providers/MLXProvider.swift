@@ -146,7 +146,7 @@ actor MLXProvider: LLMProvider {
 
         // Validate that the directory exists before handing the path to MLXLLM.
         let modelURL = URL(fileURLWithPath: path)
-        guard FileManager.default.fileExists(atPath: modelURL.path) else {
+        guard FileManager.default.fileExists(atPath: modelURL.path(percentEncoded: false)) else {
             throw LLMProviderError.modelNotFound(path: path)
         }
 
