@@ -198,10 +198,10 @@ struct AIBriefingPanelView: View {
     // MARK: Helpers
 
     private func relativeTime(from date: Date) -> String {
-        let seconds = Int(-date.timeIntervalSinceNow)
-        if seconds < 60 { return "Updated just now" }
-        if seconds < 3600 { return "Updated \(seconds / 60)m ago" }
-        return "Updated \(seconds / 3600)h ago"
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        let relative = formatter.localizedString(for: date, relativeTo: Date())
+        return "Updated \(relative)"
     }
 }
 
