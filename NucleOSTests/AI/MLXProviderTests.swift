@@ -17,7 +17,8 @@ struct MLXProviderTests {
 
     // MARK: - Helpers
 
-    /// Creates a fresh MLXProvider with UserDefaults cleaned up after the test.
+    /// Creates a fresh MLXProvider after resetting the configured model path key
+    /// in UserDefaults for this test setup.
     private func makeProvider(path: String? = nil) -> MLXProvider {
         UserDefaults.standard.removeObject(forKey: MLXProvider.modelPathKey)
         if let path {
