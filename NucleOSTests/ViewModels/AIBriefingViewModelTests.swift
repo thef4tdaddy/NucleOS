@@ -47,7 +47,19 @@ struct AIBriefingViewModelTests {
 
     @Test("initialise: stays .idle when available but auto-generate is off")
     func initialiseIdleWhenNotOptedIn() async {
-        UserDefaults.standard.set(false, forKey: AIBriefingService.autoGenerateKey)
+        let defaults = UserDefaults.standard
+        let hadPreviousValue = defaults.object(forKey: AIBriefingService.autoGenerateKey) != nil
+        let previousValue = defaults.bool(forKey: AIBriefingService.autoGenerateKey)
+
+        defer {
+            if hadPreviousValue {
+                defaults.set(previousValue, forKey: AIBriefingService.autoGenerateKey)
+            } else {
+                defaults.removeObject(forKey: AIBriefingService.autoGenerateKey)
+            }
+        }
+
+        defaults.set(false, forKey: AIBriefingService.autoGenerateKey)
         let vm = AIBriefingViewModel(service: MockAIBriefingService())
         await vm.initialise()
         if case .idle = vm.state {
