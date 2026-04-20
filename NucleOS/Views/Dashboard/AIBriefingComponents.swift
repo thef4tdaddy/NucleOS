@@ -68,7 +68,9 @@ struct AIBriefingPanelView: View {
     ///   values are forwarded (via ``DefaultHealthSummaryPromptBuilder``) to the active
     ///   ``LLMProvider`` as privacy-safe health context.
     init(healthSnapshot: HealthSnapshot? = nil) {
-        _viewModel = StateObject(wrappedValue: AIBriefingViewModel())
+        let viewModel = AIBriefingViewModel()
+        viewModel.healthSnapshot = healthSnapshot
+        _viewModel = StateObject(wrappedValue: viewModel)
         self.healthSnapshot = healthSnapshot
     }
 
@@ -78,6 +80,7 @@ struct AIBriefingPanelView: View {
     ///   - viewModel: The view model that drives panel state.
     ///   - healthSnapshot: Optional aggregate health metrics passed to the view model.
     init(viewModel: AIBriefingViewModel, healthSnapshot: HealthSnapshot? = nil) {
+        viewModel.healthSnapshot = healthSnapshot
         _viewModel = StateObject(wrappedValue: viewModel)
         self.healthSnapshot = healthSnapshot
     }
