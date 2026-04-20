@@ -87,6 +87,7 @@ final class AIBriefingViewModel: ObservableObject {
             state = .unavailable
             return
         }
+        state = .idle
         guard UserDefaults.standard.bool(forKey: AIBriefingService.autoGenerateKey) else {
             return
         }
