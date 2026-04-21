@@ -37,7 +37,13 @@ struct DefaultHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         // Structured context block — aggregate values only.
         // Raw HKSample data, HRV, SpO₂, and clinical data are never included.
         lines.append("Health data for today (aggregate metrics only):")
-        lines.append("- Steps: \(snapshot.steps) of \(snapshot.stepGoal) goal")
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        numberFormatter.locale = Locale.current
+        
+        let stepsStr = numberFormatter.string(from: NSNumber(value: snapshot.steps)) ?? "\(snapshot.steps)"
+        let stepGoalStr = numberFormatter.string(from: NSNumber(value: snapshot.stepGoal)) ?? "\(snapshot.stepGoal)"
+        lines.append("- Steps: \(stepsStr)" + (snapshot.stepGoal > 0 ? " of \(stepGoalStr) goal" : ""))
 
         if snapshot.heartRate > 0 {
             lines.append("- Average heart rate: \(Int(snapshot.heartRate)) bpm")
@@ -46,7 +52,9 @@ struct DefaultHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         lines.append("- Sleep: \(snapshot.sleepFormatted) of \(snapshot.sleepGoalFormatted) goal")
 
         if snapshot.activeCalories > 0 {
-            lines.append("- Active calories: \(Int(snapshot.activeCalories)) of \(Int(snapshot.calorieGoal)) goal")
+            let caloriesStr = numberFormatter.string(from: NSNumber(value: Int(snapshot.activeCalories))) ?? "\(Int(snapshot.activeCalories))"
+            let calorieGoalStr = numberFormatter.string(from: NSNumber(value: Int(snapshot.calorieGoal))) ?? "\(Int(snapshot.calorieGoal))"
+            lines.append("- Active calories: \(caloriesStr)" + (snapshot.calorieGoal > 0 ? " of \(calorieGoalStr) goal" : ""))
         }
 
         // System instruction — enforces output framing rules.

@@ -116,9 +116,12 @@ actor MLXProvider: LLMProvider {
                 let lmInput = try await context.processor.prepare(input: userInput)
                 let result = try MLXLMCommon.generate(
                     input: lmInput,
-                    parameters: GenerateParameters(),
+                    parameters: GenerateParameters(maxTokens: 512),
                     context: context
-                ) { (_: [Int]) in .more }
+                ) { (tokens: [Int]) in
+                    let tokenCount = tokens.count
+                    return tokenCount < 512 ? .more : .stop
+                }
                 return result.output
             }
             return output

@@ -78,7 +78,7 @@ struct HealthSummaryPromptBuilderTests {
         let builder = DefaultHealthSummaryPromptBuilder()
         let snapshot = HealthSnapshot(steps: 0, stepGoal: 10_000, heartRate: 0, sleepDuration: 0, activeCalories: 0)
         let prompt = builder.build(from: snapshot)
-        #expect(!prompt.contains("calorie"))
+        #expect(!prompt.contains("Active calories:"))
     }
 
     // MARK: - Privacy rules

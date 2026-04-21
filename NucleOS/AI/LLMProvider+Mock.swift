@@ -6,6 +6,8 @@
 //  Must not be used in production code paths.
 //
 
+#if DEBUG
+
 // MARK: - MockLLMProvider
 
 /// A test double for `LLMProvider` that returns a hardcoded completion string.
@@ -68,3 +70,5 @@ struct MockHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         MockHealthSummaryPromptBuilder.hardcodedPrompt
     }
 }
+
+#endif

@@ -21,6 +21,8 @@ enum AIBriefingState {
     case loaded(String)
     /// No LLM provider is configured or available.
     case unavailable
+    /// An error occurred during generation.
+    case error(Error)
 }
 
 // MARK: - AIBriefingViewModel
@@ -47,6 +49,9 @@ final class AIBriefingViewModel: ObservableObject {
     /// `DefaultHealthSummaryPromptBuilder`) to the LLM provider as privacy-safe
     /// health context.  Raw HealthKit types never leave the `HealthSnapshot`
     /// privacy boundary.
+    ///
+    /// Non-@Published intentionally: this value is only read during generate()
+    /// and changes do not need to trigger UI updates.
     var healthSnapshot: HealthSnapshot?
 
     /// `true` when the user has explicitly enabled AI health summaries in Settings.
@@ -125,7 +130,7 @@ final class AIBriefingViewModel: ObservableObject {
             state = .unavailable
         } catch {
             // Transient error — let the user retry if the provider is still available.
-            state = service.hasAvailableProvider ? .idle : .unavailable
+            state = .error(error)
         }
     }
 }

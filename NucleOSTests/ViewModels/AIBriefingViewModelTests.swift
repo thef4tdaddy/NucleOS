@@ -128,6 +128,9 @@ struct AIBriefingViewModelTests {
 
     @Test("isHealthSummaryEnabled defaults to false")
     func isHealthSummaryEnabledDefaultsFalse() {
+        let originalValue = UserDefaults.standard.object(forKey: AIBriefingService.healthSummaryEnabledKey)
+        defer { UserDefaults.standard.set(originalValue, forKey: AIBriefingService.healthSummaryEnabledKey) }
+        
         UserDefaults.standard.removeObject(forKey: AIBriefingService.healthSummaryEnabledKey)
         let vm = AIBriefingViewModel(service: MockAIBriefingService())
         #expect(!vm.isHealthSummaryEnabled)

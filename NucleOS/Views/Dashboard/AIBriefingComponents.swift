@@ -131,7 +131,7 @@ struct AIBriefingPanelView: View {
 
             case .loaded:
                 if let updated = viewModel.lastUpdated {
-                    Text(relativeTime(from: updated))
+                    Text(updated, style: .relative)
                         .font(.system(size: 11))
                         .foregroundColor(.textMuted)
                 }

@@ -20,11 +20,12 @@ struct MLXProviderTests {
     /// Creates a fresh MLXProvider after resetting the configured model path key
     /// in UserDefaults for this test setup.
     private func makeProvider(path: String? = nil) -> MLXProvider {
+        let userDefaults = UserDefaults(suiteName: UUID().uuidString)!
         UserDefaults.standard.removeObject(forKey: MLXProvider.modelPathKey)
         if let path {
-            UserDefaults.standard.set(path, forKey: MLXProvider.modelPathKey)
+            userDefaults.set(path, forKey: MLXProvider.modelPathKey)
         }
-        return MLXProvider()
+        return MLXProvider(userDefaults: userDefaults)
     }
 
     // MARK: - Metadata

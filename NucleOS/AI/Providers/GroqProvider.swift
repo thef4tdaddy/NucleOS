@@ -145,17 +145,19 @@ struct GroqProvider: LLMProvider {
             throw LLMProviderError.networkError(underlying: error)
         }
 
-        if let http = response as? HTTPURLResponse {
-            switch http.statusCode {
-            case 200...299:
-                break
-            case 429:
-                throw LLMProviderError.rateLimitExceeded
-            default:
-                throw LLMProviderError.inferenceError(
-                    underlying: GroqHTTPError(statusCode: http.statusCode)
-                )
-            }
+        guard let http = response as? HTTPURLResponse else {
+            throw LLMProviderError.inferenceError(underlying: URLError(.badServerResponse))
+        }
+        
+        switch http.statusCode {
+        case 200...299:
+            break
+        case 429:
+            throw LLMProviderError.rateLimitExceeded
+        default:
+            throw LLMProviderError.inferenceError(
+                underlying: GroqHTTPError(statusCode: http.statusCode)
+            )
         }
 
         return data
