@@ -34,18 +34,24 @@ All providers implement a common `LLMProvider` Swift protocol.
 ## Folder Structure
 NucleOS/
 ├── Views/
-│   ├── Dashboard/     ← main home view
-│   ├── Tasks/         ← Reminders frontend
-│   ├── Calendar/      ← EventKit frontend
-│   ├── Health/        ← HealthKit frontend (Bevel-inspired)
-│   ├── Sidebar/       ← navigation sidebar
-│   └── Menubar/       ← menu bar popover
-├── Models/            ← Swift data models
-├── Services/          ← EventKit, HealthKit, CloudKit wrappers
-├── AI/                ← LLM provider protocol + implementations
-├── Extensions/        ← Swift extensions and helpers
+│   ├── Dashboard/     ← main home view (DashboardView + Health/Stats/Tasks/Calendar/AIBriefing components)
+│   ├── Tasks/         ← Reminders frontend (read-only)
+│   ├── Calendar/      ← EventKit frontend (day/week/month range)
+│   ├── Health/        ← HealthKit frontend, Bevel-inspired (HealthView, ActivityView, SleepCard, WeeklyStepsCard)
+│   ├── Sidebar/       ← purple navigation sidebar
+│   └── Menubar/       ← menu bar popover (planned)
+├── Models/            ← NucleTask, NucleEvent, HealthSnapshot, NavigationItem, MockData
+├── Services/          ← EventKit, HealthKit, CloudKit, AIBriefingService wrappers — BUILT
+├── ViewModels/        ← HealthViewModel, AIBriefingViewModel
+├── AI/                ← LLMProvider protocol, providers, HealthSummaryPromptBuilder — BUILT
+├── Extensions/        ← KeychainHelper, Color+Theme, Date+Dashboard
+├── Config/            ← SentryConfig
 ├── ContentView.swift  ← root view, NavigationSplitView
-└── NucleOSApp.swift   ← app entry, menu bar setup
+└── NucleOSApp.swift   ← app entry, Sentry init
+
+Note: AIBriefingService lives in Services/ (not AI/) because it acts as an
+orchestration service that routes between providers, consistent with the
+Services/ pattern used by RemindersService, CalendarService, HealthService.
 
 ## Current Stack
 - SwiftUI + Swift
@@ -54,14 +60,20 @@ NucleOS/
 - Xcode, Claude Code in terminal alongside
 
 ## Build Order
-1. NavigationSplitView shell + purple sidebar
-2. Dashboard layout (stat cards, health strip, task panel, calendar panel, AI briefing)
-3. EventKit integration (Reminders + Calendar)
-4. HealthKit integration
-5. MLX + Phi-3 mini on-device AI
-6. Menu bar companion
-7. CloudKit family sharing
-8. Additional LLM providers (Groq, Anthropic, OpenAI)
+1. ✅ NavigationSplitView shell + purple sidebar
+2. ✅ Dashboard layout (stat cards, health strip, task panel, calendar panel, AI briefing)
+3. ✅ EventKit integration (Reminders + Calendar) — read-only; mutations (add/complete/delete) not yet implemented
+4. ✅ HealthKit integration — steps, heart rate, sleep, calories with permission state machine
+5. ✅ MLX + Phi-3 mini on-device AI — actor-isolated, zero network, offline inference
+6. ✅ Groq provider — llama3-8b-8192, OpenAI-compatible, rate-limit handling, Keychain storage
+7. ✅ AI Briefing layer — multi-provider orchestration (MLX → Groq → Claude → OpenAI), health context opt-in
+8. ✅ Error tracking — Sentry integration with traced operations
+9. ✅ Test suite — 17 unit tests + 1 UI smoke test, mocks for all services
+10. ⏳ Menu bar companion — planned, not yet built
+11. ⏳ Task mutations — addTask(), completeTask(), deleteTask() stubs exist in RemindersService
+12. ⏳ Claude provider — Keychain key defined, throws notImplemented
+13. ⏳ OpenAI provider — Keychain key defined, throws notImplemented
+14. ⏳ CloudKit family sharing — protocol stub + SharedData model, no sync logic yet
 
 ## Design Tokens
 Background primary: #08060f

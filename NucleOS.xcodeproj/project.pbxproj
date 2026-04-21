@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0D76BA292F93B5960046C2FD /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 0D76BA282F93B5960046C2FD /* Sentry */; };
+		273480BA2084CE8B94792C8B /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = FF3B11C8043A8CCD00DCBBA9 /* MLXLLM */; };
+		5124EA9302B3F8BBF449CCCA /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 923842476D088F912F237CEC /* MLXLMCommon */; };
 		AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1B2C3D4E5F60718293A4B5 /* HealthKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
 
@@ -47,6 +49,8 @@
 			files = (
 				AA1B2C3D4E5F60718293A4B6 /* HealthKit.framework in Frameworks */,
 				0D76BA292F93B5960046C2FD /* Sentry in Frameworks */,
+				273480BA2084CE8B94792C8B /* MLXLLM in Frameworks */,
+				5124EA9302B3F8BBF449CCCA /* MLXLMCommon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,6 +96,8 @@
 			name = NucleOS;
 			packageProductDependencies = (
 				0D76BA282F93B5960046C2FD /* Sentry */,
+				FF3B11C8043A8CCD00DCBBA9 /* MLXLLM */,
+				923842476D088F912F237CEC /* MLXLMCommon */,
 			);
 			productName = NucleOS;
 			productReference = 0D4E4E902F9180730069B310 /* NucleOS.app */;
@@ -150,6 +156,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0D76BA272F93B5950046C2FD /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0D4E4E442F9123CA0069B310;
@@ -362,7 +369,7 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx-arm64";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -538,6 +545,14 @@
 				minimumVersion = 9.10.0;
 			};
 		};
+		35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-examples";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -545,6 +560,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0D76BA272F93B5950046C2FD /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
+		};
+		FF3B11C8043A8CCD00DCBBA9 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
+			productName = MLXLLM;
+		};
+		923842476D088F912F237CEC /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
+			productName = MLXLMCommon;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

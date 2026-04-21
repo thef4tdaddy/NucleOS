@@ -49,8 +49,9 @@ struct DashboardView: View {
                 }
                 .padding(.horizontal, 32)
 
-                // AI Briefing panel
-                AIBriefingPanelView()
+                // AI Briefing panel — health snapshot forwarded so that health context
+                // can be included in the briefing when the user has enabled AI health summaries.
+                AIBriefingPanelView(healthSnapshot: healthViewModel.snapshot)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 32)
             }

@@ -35,7 +35,7 @@ struct ContentView: View {
                     case .shared:
                         PlaceholderView(title: "Shared")
                     case .settings:
-                        PlaceholderView(title: "Settings")
+                        SettingsView()
                     case .none:
                         PlaceholderView(title: "Select an item")
                     }
