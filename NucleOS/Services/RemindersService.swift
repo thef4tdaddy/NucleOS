@@ -92,9 +92,48 @@ class RemindersService: RemindersServiceProtocol {
         }
     }
 
-    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
+    /// Saves a new reminder to the user's default Reminders list.
+    ///
+    /// Requests Reminders permission if not yet determined, then creates an
+    /// `EKReminder` in the default calendar and saves it synchronously via EventKit.
     func addTask(_ task: NucleTask) async throws {
-        throw RemindersServiceError.unimplemented
+        if permissionsManager.remindersAuthStatus == .notDetermined {
+            _ = await permissionsManager.requestRemindersAccess()
+        }
+
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        guard let calendar = eventStore.defaultCalendarForNewReminders() else {
+            throw RemindersServiceError.fetchFailed(
+                NSError(
+                    domain: "RemindersService",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "No default Reminders calendar found."]
+                )
+            )
+        }
+
+        let reminder = EKReminder(eventStore: eventStore)
+        reminder.title = task.title
+        reminder.notes = task.notes
+        reminder.calendar = calendar
+
+        // Map NucleTask priority to RFC 5545 PRIORITY values:
+        // none→0, low→9, medium→5, high→1
+        switch task.priority {
+        case .none:   reminder.priority = 0
+        case .low:    reminder.priority = 9
+        case .medium: reminder.priority = 5
+        case .high:   reminder.priority = 1
+        }
+
+        do {
+            try eventStore.save(reminder, commit: true)
+        } catch {
+            throw RemindersServiceError.fetchFailed(error)
+        }
     }
 
     /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
