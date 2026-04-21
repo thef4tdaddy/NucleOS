@@ -18,5 +18,10 @@ struct NucleOSApp: App {
         WindowGroup {
             ContentView()
         }
+
+        MenuBarExtra("NucleOS", systemImage: "square.grid.2x2") {
+            MenuBarPopoverView()
+        }
+        .menuBarExtraStyle(.window)
     }
 }
