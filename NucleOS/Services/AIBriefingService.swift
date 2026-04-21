@@ -74,7 +74,8 @@ struct AIBriefingService: AIBriefingServiceProtocol {
 
     /// UserDefaults key for the user's chosen LLM provider.
     /// Value type: `String` — raw value of ``LLMProviderOption``.
-    /// Defaults to ``LLMProviderOption/mlx`` when absent.
+    /// When absent or invalid, no explicit provider preference is applied and selection
+    /// falls back to the configured provider priority order, using the first available provider.
     static let selectedProviderKey = "selectedLLMProvider"
 
     /// UserDefaults key for the opt-in auto-generate-on-appear setting.

@@ -114,9 +114,15 @@ final class SettingsViewModel: ObservableObject {
     /// Removes the stored API key from the Keychain for the current provider.
     func clearAPIKey() {
         guard let keychainKey = selectedProvider.keychainKey else { return }
-        try? KeychainHelper.delete(key: keychainKey)
-        hasAPIKey = false
-        testConnectionState = .idle
+        saveError = nil
+        do {
+            try KeychainHelper.delete(key: keychainKey)
+            hasAPIKey = false
+            testConnectionState = .idle
+        } catch {
+            saveError = error.localizedDescription
+            refreshAPIKeyStatus()
+        }
     }
 
     // MARK: Test Connection
@@ -140,22 +146,41 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: Private helpers
 
+    /// Cached provider instances keyed by `LLMProviderOption`.
+    ///
+    /// Lazily populated on first use.  Reusing the same instance is critical for
+    /// `MLXProvider`, which is an actor that caches the loaded model container —
+    /// returning a fresh instance on every call would defeat that caching and cause
+    /// repeated model loads each time the user presses "Test".
+    private var cachedProviders: [LLMProviderOption: any LLMProvider] = [:]
+
+    /// Returns the cached `LLMProvider` for the current selection, creating it on first access.
+    private func makeProvider() -> any LLMProvider {
+        if let cached = cachedProviders[selectedProvider] {
+            return cached
+        }
+        let provider: any LLMProvider = switch selectedProvider {
+        case .mlx:       MLXProvider()
+        case .groq:      GroqProvider()
+        case .anthropic: ClaudeProvider()
+        case .openai:    OpenAIProvider()
+        }
+        cachedProviders[selectedProvider] = provider
+        return provider
+    }
+
     /// Refreshes `hasAPIKey` by reading the Keychain for the current provider.
+    /// Trims the stored value and treats whitespace-only keys as absent, matching
+    /// the same validation `GroqProvider` (and future cloud providers) apply in `isAvailable`.
     private func refreshAPIKeyStatus() {
         guard let keychainKey = selectedProvider.keychainKey else {
             hasAPIKey = false
             return
         }
-        hasAPIKey = (try? KeychainHelper.get(key: keychainKey)) != nil
-    }
-
-    /// Creates a fresh `LLMProvider` instance for the currently selected option.
-    private func makeProvider() -> any LLMProvider {
-        switch selectedProvider {
-        case .mlx:       return MLXProvider()
-        case .groq:      return GroqProvider()
-        case .anthropic: return ClaudeProvider()
-        case .openai:    return OpenAIProvider()
+        guard let apiKey = try? KeychainHelper.get(key: keychainKey) else {
+            hasAPIKey = false
+            return
         }
+        hasAPIKey = !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
