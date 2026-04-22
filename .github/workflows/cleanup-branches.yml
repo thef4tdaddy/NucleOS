@@ -1,0 +1,77 @@
+name: Cleanup Stale Branches
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9:00 AM
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stale branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const now = new Date();
+            
+            // Get all open PRs to prevent deleting their head branches
+            let openPrBranches = new Set();
+            for await (const response of github.paginate.iterator(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: 'open'
+            })) {
+              for (const pr of response.data) {
+                openPrBranches.add(pr.head.ref);
+              }
+            }
+            
+            for await (const response of github.paginate.iterator(github.rest.repos.listBranches, {
+              owner,
+              repo
+            })) {
+              for (const branch of response.data) {
+                const branchName = branch.name;
+                
+                // Don't delete default branch or open PR branches
+                if (branchName === 'main' || branchName === 'master' || openPrBranches.has(branchName)) continue;
+                
+                // Get the latest commit for the branch
+                const commit = await github.rest.repos.getCommit({
+                  owner,
+                  repo,
+                  ref: branch.commit.sha
+                });
+                
+                const commitDate = new Date(commit.data.commit.committer.date);
+                const diffTime = Math.abs(now - commitDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let shouldDelete = false;
+                
+                if (branchName.startsWith('copilot/') && diffDays > 3) {
+                  shouldDelete = true;
+                } else if ((branchName.startsWith('feat/') || branchName.startsWith('version/') || branchName.startsWith('branches/')) && diffDays > 30) {
+                  shouldDelete = true;
+                }
+                
+                if (shouldDelete) {
+                  console.log(`Deleting branch ${branchName} (last commit ${diffDays} days ago)`);
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner,
+                      repo,
+                      ref: `heads/${branchName}`
+                    });
+                  } catch (e) {
+                    console.error(`Failed to delete branch ${branchName}:`, e.message);
+                  }
+                }
+              }
+            }
