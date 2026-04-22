@@ -21,21 +21,14 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
     var iconName: String {
         switch self {
-        case .dashboard: return "square.grid.2x2" // keep SF symbol for now, or maybe they want main-icon-concept? No, Dashboard is kept as SF Symbol according to issue: "Dashboard -> use SF Symbol or nucleus icon". I'll use SF symbol.
-        case .tasks: return "icon-tasks"
-        case .calendar: return "icon-calendar"
-        case .health: return "icon-health-body"
-        case .aiBriefing: return "icon-ai"
+        case .dashboard: return "square.grid.2x2"
+        case .tasks: return "checklist"
+        case .calendar: return "calendar"
+        case .health: return "heart.fill"
+        case .aiBriefing: return "sparkles"
         case .focus: return "timer"
         case .shared: return "person.2.fill"
         case .settings: return "gearshape.fill"
-        }
-    }
-
-    var isCustomIcon: Bool {
-        switch self {
-        case .tasks, .calendar, .health, .aiBriefing: return true
-        default: return false
         }
     }
 }

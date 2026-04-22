@@ -18,7 +18,7 @@ struct HealthStripView: View {
         if let snapshot = snapshot {
             HStack(spacing: 16) {
                 HealthMetricCard(
-                    icon: "icon-steps",
+                    icon: "figure.walk",
                     label: "Steps",
                     value: snapshot.steps.formatted(),
                     goal: snapshot.stepGoal.formatted(),
@@ -27,7 +27,7 @@ struct HealthStripView: View {
                 )
 
                 HealthMetricCard(
-                    icon: "icon-health-vitality",
+                    icon: "heart.fill",
                     label: "Heart Rate",
                     value: "\(Int(snapshot.heartRate))",
                     goal: "avg",
@@ -36,7 +36,7 @@ struct HealthStripView: View {
                 )
 
                 HealthMetricCard(
-                    icon: "icon-sleep",
+                    icon: "bed.double.fill",
                     label: "Sleep",
                     value: snapshot.sleepFormatted,
                     goal: snapshot.sleepGoalFormatted,
@@ -56,7 +56,7 @@ struct HealthStripView: View {
         } else {
             HStack(spacing: 16) {
                 HealthMetricCard(
-                    icon: "icon-steps",
+                    icon: "figure.walk",
                     label: "Steps",
                     value: "—",
                     goal: "—",
@@ -65,7 +65,7 @@ struct HealthStripView: View {
                 )
 
                 HealthMetricCard(
-                    icon: "icon-health-vitality",
+                    icon: "heart.fill",
                     label: "Heart Rate",
                     value: "—",
                     goal: "—",
@@ -74,7 +74,7 @@ struct HealthStripView: View {
                 )
 
                 HealthMetricCard(
-                    icon: "icon-sleep",
+                    icon: "bed.double.fill",
                     label: "Sleep",
                     value: "—",
                     goal: "—",
@@ -106,18 +106,9 @@ struct HealthMetricCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                if icon.hasPrefix("icon-") {
-                    Image(icon)
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(color)
-                } else {
-                    Image(systemName: icon)
-                        .font(.system(size: 16))
-                        .foregroundColor(color)
-                }
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
 
                 Spacer()
 
