@@ -20,6 +20,8 @@ struct CalendarView: View {
     @State private var showingDayTimeline = false
     @State private var isCreatingEvent = false
     @State private var isEditingEvent: NucleEvent?
+    @State private var quickAddText = ""
+    @State private var showingQuickAdd = false
 
     private let calendarService = CalendarService()
     private let mockService = MockCalendarService()
@@ -86,6 +88,9 @@ struct CalendarView: View {
             isEditingEvent = nil
         }) { event in
             EventFormView(event: event, isPresented: $isEditingEvent)
+        }
+        .sheet(isPresented: $showingQuickAdd) {
+            QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
         }
     }
 
@@ -154,8 +159,16 @@ struct CalendarView: View {
                 .disabled(isLoading)
                 .accessibilityLabel("Select day range")
 
-                Button(action: { isCreatingEvent = true }, label: {
+                Button(action: { showingQuickAdd = true }, label: {
                     Image(systemName: "plus.circle.fill")
+                        .foregroundColor(.accentPrimary)
+                })
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+                .accessibilityLabel("Quick add event")
+
+                Button(action: { isCreatingEvent = true }, label: {
+                    Image(systemName: "square.and.pencil")
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
@@ -420,6 +433,10 @@ struct EventCardView: View {
                             .stroke(Color.border, lineWidth: 1)
                     )
             )
+            .onDrag {
+                let itemProvider = NSItemProvider(object: event.id.uuidString as NSString)
+                return itemProvider
+            }
             .offset(x: offset.width)
             .gesture(
                 DragGesture()
