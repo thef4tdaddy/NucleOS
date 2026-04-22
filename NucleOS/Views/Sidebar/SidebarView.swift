@@ -109,10 +109,19 @@ struct NavigationItemRow: View {
                     .frame(width: 6, height: 6)
 
                 // Icon
-                Image(systemName: item.iconName)
-                    .font(.system(size: 14))
-                    .foregroundColor(isSelected ? .textPrimary : .textSecondary)
-                    .frame(width: 16)
+                Group {
+                    if item.isCustomIcon {
+                        Image(item.iconName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image(systemName: item.iconName)
+                    }
+                }
+                .font(.system(size: 14))
+                .foregroundColor(isSelected ? .textPrimary : .textSecondary)
+                .frame(width: 16)
 
                 // Label
                 Text(item.rawValue)

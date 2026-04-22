@@ -114,7 +114,11 @@ struct AIBriefingPanelView: View {
     @ViewBuilder
     private var headerView: some View {
         HStack {
-            Image(systemName: "sparkles")
+            Image("icon-ai")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
                 .foregroundColor(.accentLavender)
 
             Text("AI Briefing")

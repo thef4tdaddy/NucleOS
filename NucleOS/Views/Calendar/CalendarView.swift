@@ -22,15 +22,24 @@ struct CalendarView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Calendar")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(.textPrimary)
+                HStack(spacing: 12) {
+                    Image("icon-calendar")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.accentPrimary)
 
-                    if !events.isEmpty {
-                        Text("\(events.count) events in the next \(selectedDays) days")
-                            .font(.system(size: 14))
-                            .foregroundColor(.textSecondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Calendar")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.textPrimary)
+
+                        if !events.isEmpty {
+                            Text("\(events.count) events in the next \(selectedDays) days")
+                                .font(.system(size: 14))
+                                .foregroundColor(.textSecondary)
+                        }
                     }
                 }
 

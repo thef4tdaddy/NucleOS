@@ -22,15 +22,24 @@ struct TasksView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tasks")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(.textPrimary)
+                HStack(spacing: 12) {
+                    Image("icon-tasks")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.accentPrimary)
 
-                    if !tasks.isEmpty {
-                        Text("\(incompleteTasks.count) incomplete, \(completedTasks.count) completed")
-                            .font(.system(size: 14))
-                            .foregroundColor(.textSecondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Tasks")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.textPrimary)
+
+                        if !tasks.isEmpty {
+                            Text("\(incompleteTasks.count) incomplete, \(completedTasks.count) completed")
+                                .font(.system(size: 14))
+                                .foregroundColor(.textSecondary)
+                        }
                     }
                 }
 
