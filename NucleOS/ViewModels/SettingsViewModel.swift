@@ -145,18 +145,15 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    // MARK: Private helpers
+    // MARK: Private
 
     /// Cached provider instances keyed by `LLMProviderOption`.
-    ///
-    /// Lazily populated on first use.  Reusing the same instance is critical for
-    /// `MLXProvider`, which is an actor that caches the loaded model container —
-    /// returning a fresh instance on every call would defeat that caching and cause
-    /// repeated model loads each time the user presses "Test".
     private var cachedProviders: [LLMProviderOption: any LLMProvider] = [:]
 
+    // MARK: Provider Access
+
     /// Returns the cached `LLMProvider` for the current selection, creating it on first access.
-    private func makeProvider() -> any LLMProvider {
+    func makeProvider() -> any LLMProvider {
         if let cached = cachedProviders[selectedProvider] {
             return cached
         }
