@@ -346,9 +346,9 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "NucleOS uses Calendar to display your events on the dashboard.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "NucleOS needs full access to your reminders to display and manage tasks.";
-				INFOPLIST_KEY_SENTRY_DSN = REPLACE_WITH_YOUR_SENTRY_DSN;
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_SENTRY_DSN = "https://3fba34c519f86cde00d69aac85732dfb@o4509435944108032.ingest.us.sentry.io/4511236210622464";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -399,9 +399,9 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "NucleOS uses Calendar to display your events on the dashboard.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "NucleOS reads your health data to display on your personal dashboard.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "NucleOS may update health records on your behalf.";
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "NucleOS needs full access to your reminders to display and manage tasks.";
-				INFOPLIST_KEY_SENTRY_DSN = REPLACE_WITH_YOUR_SENTRY_DSN;
+				INFOPLIST_KEY_NSRemindersUsageDescription = "NucleOS uses Reminders to display and manage your tasks.";
+				INFOPLIST_KEY_SENTRY_DSN = "https://3fba34c519f86cde00d69aac85732dfb@o4509435944108032.ingest.us.sentry.io/4511236210622464";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -561,15 +561,15 @@
 			package = 0D76BA272F93B5950046C2FD /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
 		};
-		FF3B11C8043A8CCD00DCBBA9 /* MLXLLM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
-			productName = MLXLLM;
-		};
 		923842476D088F912F237CEC /* MLXLMCommon */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
 			productName = MLXLMCommon;
+		};
+		FF3B11C8043A8CCD00DCBBA9 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35FE2803DCC946CDA32DCB34 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
+			productName = MLXLLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
