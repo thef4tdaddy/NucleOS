@@ -31,12 +31,11 @@ struct CalendarPanelView: View {
                         .tint(.accentPrimary)
                 }
 
-                Button(action: {}, label: {
+                Button(action: { isCreatingEvent = true }, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
-                .disabled(true) // Disabled until add functionality is implemented
             }
 
             if permissionDenied {
@@ -73,6 +72,9 @@ struct CalendarPanelView: View {
                         .stroke(Color.border, lineWidth: 1)
                 )
         )
+        .sheet(isPresented: $isCreatingEvent) {
+            EventFormView(event: nil, isPresented: $isCreatingEvent)
+        }
         .task(priority: .userInitiated) {
             await loadEvents()
         }

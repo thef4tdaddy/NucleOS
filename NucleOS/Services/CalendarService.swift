@@ -17,6 +17,16 @@ protocol CalendarServiceProtocol {
     /// Returns events in the half-open range [today, today + days).
     /// - Parameter days: Number of days to look ahead. Must be ≥ 1; passing 0 returns an empty array.
     func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent]
+    /// Returns all events for the month containing the given date.
+    /// - Parameter month: Any date within the desired month; the method will query from the first day
+    ///   of that month to the first day of the following month.
+    func fetchEvents(for month: Date) async throws -> [NucleEvent]
+    /// Creates a new event in the user's calendar.
+    func createEvent(_ event: NucleEvent) async throws
+    /// Updates an existing event in the user's calendar.
+    func updateEvent(_ event: NucleEvent) async throws
+    /// Deletes an event from the user's calendar.
+    func deleteEvent(_ event: NucleEvent) async throws
 }
 
 // MARK: - Errors
@@ -45,6 +55,28 @@ enum CalendarServiceError: LocalizedError {
 class CalendarService: CalendarServiceProtocol {
     private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
+    private var changeObserver: NSObjectProtocol?
+
+    init() {
+        setupChangeObserver()
+    }
+
+    deinit {
+        if let observer = changeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func setupChangeObserver() {
+        changeObserver = NotificationCenter.default.addObserver(
+            forName: .EKEventStoreChanged,
+            object: eventStore,
+            queue: .main
+        ) { [weak self] _ in
+            // Post notification that calendar data has changed
+            NotificationCenter.default.post(name: NSNotification.Name("CalendarDataChanged"), object: nil)
+        }
+    }
 
     /// Fetches all events occurring today (midnight-to-midnight in the user's time zone).
     func fetchTodayEvents() async throws -> [NucleEvent] {
@@ -59,16 +91,88 @@ class CalendarService: CalendarServiceProtocol {
         }
     }
 
-    /// Fetches events in the half-open range [now, now + `days`).
-    func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
-        guard days > 0 else { return [] }
-
-        let startDate = Date()
-        guard let endDate = Calendar.current.date(byAdding: .day, value: days, to: startDate) else {
+    /// Fetches all events for a given month.
+    func fetchEvents(for month: Date) async throws -> [NucleEvent] {
+        // Determine the start of the month
+        let calendar = Calendar.current
+        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)) else {
             return []
         }
+        // Determine the start of the next month
+        guard let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else {
+            return []
+        }
+        // Reuse existing range fetcher
+        return try await fetchEvents(from: monthStart, to: monthEnd)
+    }
 
-        return try await fetchEvents(from: startDate, to: endDate)
+    /// Creates a new event in the user's calendar.
+    func createEvent(_ event: NucleEvent) async throws {
+        guard permissionsManager.hasCalendarAccess else {
+            throw CalendarServiceError.permissionDenied
+        }
+
+        let ekEvent = EKEvent(eventStore: eventStore)
+        ekEvent.title = event.title
+        ekEvent.startDate = event.startDate
+        ekEvent.endDate = event.endDate
+        ekEvent.isAllDay = event.isAllDay
+        ekEvent.location = event.location
+        ekEvent.calendar = eventStore.defaultCalendarForNewEvents
+
+        try eventStore.save(ekEvent, span: .thisEvent)
+    }
+
+    /// Updates an existing event in the user's calendar.
+    func updateEvent(_ event: NucleEvent) async throws {
+        guard permissionsManager.hasCalendarAccess else {
+            throw CalendarServiceError.permissionDenied
+        }
+
+        let predicate = eventStore.predicateForEvents(
+            withStart: event.startDate,
+            end: event.endDate,
+            calendars: nil
+        )
+
+        let ekEvents = await Task.detached {
+            eventStore.events(matching: predicate)
+        }.value
+
+        if let ekEvent = ekEvents.first(where: { $0.title == event.title && $0.startDate == event.startDate }) {
+            ekEvent.title = event.title
+            ekEvent.startDate = event.startDate
+            ekEvent.endDate = event.endDate
+            ekEvent.isAllDay = event.isAllDay
+            ekEvent.location = event.location
+
+            try eventStore.save(ekEvent, span: .thisEvent)
+        } else {
+            throw CalendarServiceError.fetchFailed(NSError(domain: "CalendarService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Event not found"]))
+        }
+    }
+
+    /// Deletes an event from the user's calendar.
+    func deleteEvent(_ event: NucleEvent) async throws {
+        guard permissionsManager.hasCalendarAccess else {
+            throw CalendarServiceError.permissionDenied
+        }
+
+        let predicate = eventStore.predicateForEvents(
+            withStart: event.startDate,
+            end: event.endDate,
+            calendars: nil
+        )
+
+        let ekEvents = await Task.detached {
+            eventStore.events(matching: predicate)
+        }.value
+
+        if let ekEvent = ekEvents.first(where: { $0.title == event.title && $0.startDate == event.startDate }) {
+            try eventStore.remove(ekEvent, span: .thisEvent)
+        } else {
+            throw CalendarServiceError.fetchFailed(NSError(domain: "CalendarService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Event not found"]))
+        }
     }
 
     // MARK: - Private Helpers
