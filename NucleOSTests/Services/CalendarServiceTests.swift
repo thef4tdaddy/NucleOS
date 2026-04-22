@@ -100,4 +100,40 @@ struct CalendarServiceSwiftTests {
         let uniqueIDs = Set(ids)
         #expect(ids.count == uniqueIDs.count)
     }
+
+    // MARK: - Tier 2 fields
+
+    @Test("Mock events have default tier 2 fields")
+    func mockEventsHaveDefaultTier2Fields() async throws {
+        let service = MockCalendarService()
+        let events = try await service.fetchTodayEvents()
+
+        for event in events {
+            #expect(event.notes == nil)
+            #expect(event.url == nil)
+            #expect(event.availability == .busy)
+            #expect(event.reminderOffset == nil)
+            #expect(event.isDeclined == false)
+        }
+    }
+
+    @Test("NucleEvent with all tier 2 fields can be created")
+    func nucleEventWithAllTier2Fields() {
+        let event = NucleEvent(
+            title: "Complete Event",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(3600),
+            notes: "Test notes",
+            url: URL(string: "https://example.com"),
+            availability: .free,
+            reminderOffset: 30,
+            isDeclined: true
+        )
+
+        #expect(event.notes == "Test notes")
+        #expect(event.url?.absoluteString == "https://example.com")
+        #expect(event.availability == .free)
+        #expect(event.reminderOffset == 30)
+        #expect(event.isDeclined == true)
+    }
 }
