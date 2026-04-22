@@ -115,11 +115,9 @@ struct AIBriefingPanelView: View {
     private var headerView: some View {
         HStack {
             Image("icon-ai")
-                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 16, height: 16)
-                .foregroundColor(.accentLavender)
 
             Text("AI Briefing")
                 .font(.system(size: 16, weight: .semibold))

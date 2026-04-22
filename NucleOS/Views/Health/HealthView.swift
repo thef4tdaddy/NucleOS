@@ -17,11 +17,9 @@ struct HealthView: View {
                 HStack {
                 HStack(spacing: 12) {
                     Image("icon-health-body")
-                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 28, height: 28)
-                        .foregroundColor(.accentPrimary)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Health")
