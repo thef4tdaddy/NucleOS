@@ -221,13 +221,35 @@ class CalendarService: CalendarServiceProtocol {
             eventColor = .accentPrimary
         }
 
+        // Convert availability
+        let availability: EventAvailability
+        switch ekEvent.availability {
+        case .free: availability = .free
+        case .tentative: availability = .tentative
+        case .unavailable: availability = .unavailable
+        default: availability = .busy
+        }
+
+        // Check if user declined
+        let isDeclined = ekEvent.attendees?.contains(where: { attendee in
+            attendee.isCurrentUser && attendee.participantStatus == .declined
+        }) ?? false
+
+        // Get reminder offset from alarms
+        let reminderOffset = ekEvent.alarms?.first?.relativeOffset.map { Int(-$0 / 60) }
+
         return NucleEvent(
             title: title,
             startDate: ekEvent.startDate,
             endDate: ekEvent.endDate,
             calendarColor: eventColor,
             isAllDay: ekEvent.isAllDay,
-            location: ekEvent.location
+            location: ekEvent.location,
+            notes: ekEvent.notes,
+            url: ekEvent.url,
+            availability: availability,
+            reminderOffset: reminderOffset,
+            isDeclined: isDeclined
         )
     }
 

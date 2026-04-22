@@ -40,6 +40,10 @@ struct EventFormView: View {
     @State private var error: String?
     @State private var recurrenceFrequency: RecurrenceFrequency = .never
     @State private var recurrenceEnd: RecurrenceEnd = .never
+    @State private var notes = ""
+    @State private var urlString = ""
+    @State private var availability: EventAvailability = .busy
+    @State private var reminderOffset: Int? = nil
 
     private let calendarService = CalendarService()
 
@@ -54,6 +58,10 @@ struct EventFormView: View {
             _isAllDay = State(initialValue: event.isAllDay)
             _location = State(initialValue: event.location)
             _calendarColor = State(initialValue: event.calendarColor)
+            _notes = State(initialValue: event.notes ?? "")
+            _urlString = State(initialValue: event.url?.absoluteString ?? "")
+            _availability = State(initialValue: event.availability)
+            _reminderOffset = State(initialValue: event.reminderOffset)
         }
     }
 
@@ -80,6 +88,40 @@ struct EventFormView: View {
                     TextField("Location (Optional)", text: $location)
                         .textFieldStyle(.roundedBorder)
                         .disableAutocorrection(true)
+
+                    TextField("URL (Optional)", text: $urlString)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.URL)
+
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 80)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.border, lineWidth: 1)
+                        )
+                }
+
+                Section(header: Text("Availability")) {
+                    Picker("Status", selection: $availability) {
+                        Text("Busy").tag(EventAvailability.busy)
+                        Text("Free").tag(EventAvailability.free)
+                        Text("Tentative").tag(EventAvailability.tentative)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section(header: Text("Alert")) {
+                    Picker("Reminder", selection: $reminderOffset) {
+                        Text("None").tag(Int?.none)
+                        Text("At time of event").tag(Int?.some(0))
+                        Text("5 minutes before").tag(Int?.some(5))
+                        Text("15 minutes before").tag(Int?.some(15))
+                        Text("30 minutes before").tag(Int?.some(30))
+                        Text("1 hour before").tag(Int?.some(60))
+                        Text("2 hours before").tag(Int?.some(120))
+                        Text("1 day before").tag(Int?.some(1440))
+                    }
+                    .pickerStyle(.menu)
                 }
 
                 Section(header: Text("Repeat")) {
@@ -165,6 +207,7 @@ struct EventFormView: View {
         isLoading = true
         error = nil
 
+        let eventURL = URL(string: urlString)
         let eventToSave = NucleEvent(
             id: event?.id ?? UUID(),
             title: title,
@@ -172,7 +215,11 @@ struct EventFormView: View {
             endDate: endDate,
             calendarColor: calendarColor,
             isAllDay: isAllDay,
-            location: location
+            location: location,
+            notes: notes.isEmpty ? nil : notes,
+            url: eventURL,
+            availability: availability,
+            reminderOffset: reminderOffset
         )
 
         Task {

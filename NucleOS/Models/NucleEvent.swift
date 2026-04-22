@@ -51,6 +51,16 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
     var isAllDay: Bool
     /// Optional location string attached to the event.
     var location: String?
+    /// Optional notes / description text.
+    var notes: String?
+    /// Optional URL associated with the event.
+    var url: URL?
+    /// Availability status (busy, free, tentative, unavailable).
+    var availability: EventAvailability
+    /// Event reminder offset in minutes before start (nil = no reminder).
+    var reminderOffset: Int?
+    /// Whether the user has declined this event invitation.
+    var isDeclined: Bool
 
     /// Creates a new `NucleEvent`.
     /// - Parameters:
@@ -61,6 +71,11 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
     ///   - calendarColor: Color token of the source calendar. Defaults to `.accentPrimary`.
     ///   - isAllDay: Whether the event spans the full day. Defaults to `false`.
     ///   - location: Optional location string.
+    ///   - notes: Optional description text.
+    ///   - url: Optional URL.
+    ///   - availability: Busy/free status. Defaults to `.busy`.
+    ///   - reminderOffset: Minutes before event for alert. Defaults to `nil`.
+    ///   - isDeclined: Whether user declined. Defaults to `false`.
     nonisolated init(
         id: UUID = UUID(),
         title: String,
@@ -68,7 +83,12 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
         endDate: Date,
         calendarColor: EventColor = .accentPrimary,
         isAllDay: Bool = false,
-        location: String? = nil
+        location: String? = nil,
+        notes: String? = nil,
+        url: URL? = nil,
+        availability: EventAvailability = .busy,
+        reminderOffset: Int? = nil,
+        isDeclined: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -77,5 +97,18 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
         self.calendarColor = calendarColor
         self.isAllDay = isAllDay
         self.location = location
+        self.notes = notes
+        self.url = url
+        self.availability = availability
+        self.reminderOffset = reminderOffset
+        self.isDeclined = isDeclined
     }
+}
+
+/// Availability status for calendar events.
+enum EventAvailability: String, Sendable {
+    case busy
+    case free
+    case tentative
+    case unavailable
 }
