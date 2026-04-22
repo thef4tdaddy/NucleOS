@@ -162,6 +162,8 @@ struct AIBriefingPanelView: View {
             loadedView(briefing: briefing)
         case .unavailable:
             unavailableView
+        case .error(let error):
+            errorView(error: error)
         }
     }
 
@@ -196,6 +198,15 @@ struct AIBriefingPanelView: View {
         Text("Enable AI in Settings to see your briefing.")
             .font(.system(size: 13))
             .foregroundColor(.textMuted)
+    }
+
+    private func errorView(error: Error) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Failed to generate: \(error.localizedDescription)")
+                .font(.system(size: 13))
+                .foregroundColor(.red)
+            idleView
+        }
     }
 
     // MARK: Helpers
@@ -245,4 +256,3 @@ struct BriefingBullet: View {
     .background(Color.backgroundPrimary)
     .frame(width: 500)
 }
-

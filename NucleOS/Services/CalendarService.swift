@@ -84,11 +84,10 @@ class CalendarService: CalendarServiceProtocol {
             throw CalendarServiceError.permissionDenied
         }
 
-        let calendars = eventStore.calendars(for: .event)
         let predicate = eventStore.predicateForEvents(
             withStart: startDate,
             end: endDate,
-            calendars: calendars
+            calendars: nil
         )
 
         // Capture eventStore before detaching to avoid actor isolation issues

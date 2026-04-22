@@ -20,10 +20,10 @@ final class HealthViewModel: ObservableObject {
     private let authService: HealthKitAuthorizationServiceProtocol
 
     init(
-        service: HealthServiceProtocol = HealthService(),
+        service: HealthServiceProtocol? = nil,
         authService: HealthKitAuthorizationServiceProtocol? = nil
     ) {
-        self.service = service
+        self.service = service ?? HealthService()
         if let authService {
             self.authService = authService
         } else {

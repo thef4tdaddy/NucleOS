@@ -6,7 +6,8 @@
 //  Owns provider selection (UserDefaults) and API key management (Keychain).
 //
 
-import Foundation
+import SwiftUI
+import Combine
 
 // MARK: - TestConnectionState
 

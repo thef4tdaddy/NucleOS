@@ -38,28 +38,28 @@ struct HealthSnapshot: Identifiable, Hashable, Sendable {
     var date: Date
 
     /// Progress towards the step goal, clamped to [0, 1].
-    var stepsProgress: Double {
+    nonisolated var stepsProgress: Double {
         guard stepGoal > 0 else { return 0 }
         let progress = Double(steps) / Double(stepGoal)
         return max(0.0, min(progress, 1.0))
     }
 
     /// Progress towards the sleep goal, clamped to [0, 1].
-    var sleepProgress: Double {
+    nonisolated var sleepProgress: Double {
         guard sleepGoal > 0 else { return 0 }
         let progress = sleepDuration / sleepGoal
         return max(0.0, min(progress, 1.0))
     }
 
     /// Progress towards the calorie goal, clamped to [0, 1].
-    var caloriesProgress: Double {
+    nonisolated var caloriesProgress: Double {
         guard calorieGoal > 0 else { return 0 }
         let progress = activeCalories / calorieGoal
         return max(0.0, min(progress, 1.0))
     }
 
     /// Sleep duration formatted as a human-readable string (e.g. "7h 23m").
-    var sleepFormatted: String {
+    nonisolated var sleepFormatted: String {
         let totalMinutes = Int(sleepDuration / 60)
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
@@ -67,7 +67,7 @@ struct HealthSnapshot: Identifiable, Hashable, Sendable {
     }
 
     /// Sleep goal formatted as a human-readable string (e.g. "8h" or "7h 30m").
-    var sleepGoalFormatted: String {
+    nonisolated var sleepGoalFormatted: String {
         let totalMinutes = Int(sleepGoal / 60)
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
@@ -77,7 +77,7 @@ struct HealthSnapshot: Identifiable, Hashable, Sendable {
         return "\(hours)h \(minutes)m"
     }
 
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         steps: Int,
         stepGoal: Int = 10_000,

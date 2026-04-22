@@ -49,7 +49,7 @@ enum SentryConfig {
             options.beforeBreadcrumb = { breadcrumb in
                 // Discard breadcrumbs that might carry user content.
                 let sensitiveCategories: Set<String> = ["ui.click", "ui.lifecycle"]
-                if sensitiveCategories.contains(breadcrumb.category ?? "") {
+                if sensitiveCategories.contains(breadcrumb.category) {
                     return nil
                 }
                 // Redact breadcrumb fields that may contain PII

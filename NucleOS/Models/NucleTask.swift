@@ -45,7 +45,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     ///   - completionDate: Optional date the task was completed.
     ///   - notes: Optional free-form notes.
     ///   - priority: Relative importance. Defaults to `.medium`.
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         title: String,
         isCompleted: Bool = false,

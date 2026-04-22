@@ -42,16 +42,16 @@ struct GroqProvider: LLMProvider {
     // MARK: - Constants
 
     /// Default Groq model identifier used for all completions.
-    static let defaultModel = "llama3-8b-8192"
+    nonisolated static let defaultModel = "llama3-8b-8192"
 
     /// Groq OpenAI-compatible completions endpoint URL string.
-    private static let apiURLString = "https://api.groq.com/openai/v1/chat/completions"
+    nonisolated private static let apiURLString = "https://api.groq.com/openai/v1/chat/completions"
 
     /// Maximum tokens to request in each completion.
-    private static let maxTokens = 512
+    nonisolated private static let maxTokens = 512
 
     /// Network timeout for each completion request, in seconds.
-    private static let timeoutInterval: TimeInterval = 30
+    nonisolated private static let timeoutInterval: TimeInterval = 30
 
     // MARK: - LLMProvider
 
@@ -89,7 +89,7 @@ struct GroqProvider: LLMProvider {
     ///
     /// Any `KeychainError` is mapped to `LLMProviderError.unavailable` so callers
     /// always receive a typed `LLMProviderError`.
-    private func resolvedAPIKey() throws -> String {
+    nonisolated private func resolvedAPIKey() throws -> String {
         let raw: String?
         do {
             raw = try KeychainHelper.get(key: KeychainHelper.groqAPIKey)
@@ -107,7 +107,7 @@ struct GroqProvider: LLMProvider {
     }
 
     /// Builds a POST request to the Groq completions endpoint.
-    private func buildRequest(prompt: String, apiKey: String) throws -> URLRequest {
+    nonisolated private func buildRequest(prompt: String, apiKey: String) throws -> URLRequest {
         guard let url = URL(string: GroqProvider.apiURLString) else {
             throw LLMProviderError.inferenceError(underlying: URLError(.badURL))
         }
@@ -135,7 +135,7 @@ struct GroqProvider: LLMProvider {
     /// - Transport errors → `LLMProviderError.networkError`
     /// - HTTP 429         → `LLMProviderError.rateLimitExceeded`
     /// - Other non-2xx    → `LLMProviderError.inferenceError` (with status code)
-    private func executeRequest(_ request: URLRequest) async throws -> Data {
+    nonisolated private func executeRequest(_ request: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
 
@@ -148,7 +148,7 @@ struct GroqProvider: LLMProvider {
         guard let http = response as? HTTPURLResponse else {
             throw LLMProviderError.inferenceError(underlying: URLError(.badServerResponse))
         }
-        
+
         switch http.statusCode {
         case 200...299:
             break
@@ -164,34 +164,18 @@ struct GroqProvider: LLMProvider {
     }
 
     /// Decodes the Groq API JSON response and extracts the completion text.
-    private func parseResponse(_ data: Data) throws -> String {
-        do {
-            let decoded = try JSONDecoder().decode(GroqResponse.self, from: data)
-            guard let content = decoded.choices.first?.message.content else {
-                throw LLMProviderError.inferenceError(underlying: URLError(.cannotParseResponse))
-            }
-            return content
-        } catch let error as LLMProviderError {
-            throw error
-        } catch {
-            throw LLMProviderError.inferenceError(underlying: error)
+    nonisolated private func parseResponse(_ data: Data) throws -> String {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let firstChoice = choices.first,
+              let message = firstChoice["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw LLMProviderError.inferenceError(underlying: URLError(.cannotParseResponse))
         }
+        return content
     }
 }
 
-// MARK: - Private Response Models
-
-private struct GroqResponse: Decodable {
-    let choices: [Choice]
-
-    struct Choice: Decodable {
-        let message: Message
-    }
-
-    struct Message: Decodable {
-        let content: String
-    }
-}
 
 // MARK: - Private Error Types
 

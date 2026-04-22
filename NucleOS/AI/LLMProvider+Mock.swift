@@ -38,7 +38,7 @@ struct MockLLMProvider: LLMProvider {
     var isAvailable: Bool { true }
 
     /// The fixed string returned by every call to `complete(prompt:)`.
-    static let hardcodedResponse = "This is a mock AI response for previews and tests."
+    nonisolated static let hardcodedResponse = "This is a mock AI response for previews and tests."
 
     /// Returns `MockLLMProvider.hardcodedResponse` regardless of `prompt`.
     func complete(prompt: String) async throws -> String {
@@ -63,7 +63,7 @@ struct MockLLMProvider: LLMProvider {
 struct MockHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
 
     /// The fixed string returned by every call to `build(from:)`.
-    static let hardcodedPrompt = "Mock health prompt for previews and tests."
+    nonisolated static let hardcodedPrompt = "Mock health prompt for previews and tests."
 
     /// Returns `MockHealthSummaryPromptBuilder.hardcodedPrompt` regardless of snapshot contents.
     func build(from snapshot: HealthSnapshot) -> String {

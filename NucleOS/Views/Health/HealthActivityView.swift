@@ -28,4 +28,3 @@ struct HealthActivityView: View {
     }
     .background(Color.backgroundPrimary)
 }
-

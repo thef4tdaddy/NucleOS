@@ -57,7 +57,7 @@ actor MLXProvider: LLMProvider {
 
     /// UserDefaults key that stores the local model directory path.
     /// Value type: `String` (absolute file path).
-    static let modelPathKey = "mlxModelPath"
+    nonisolated static let modelPathKey = "mlxModelPath"
 
     // MARK: - Cached state
 

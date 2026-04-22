@@ -40,15 +40,15 @@ enum KeychainHelper {
 
     // MARK: Key Constants
 
-    static let groqAPIKey = "com.nucleos.apikey.groq"
-    static let anthropicAPIKey = "com.nucleos.apikey.anthropic"
-    static let openAIAPIKey = "com.nucleos.apikey.openai"
+    nonisolated static let groqAPIKey = "com.nucleos.apikey.groq"
+    nonisolated static let anthropicAPIKey = "com.nucleos.apikey.anthropic"
+    nonisolated static let openAIAPIKey = "com.nucleos.apikey.openai"
 
-    private static let service = "com.nucleos.NucleOS"
+    nonisolated private static let service = "com.nucleos.NucleOS"
 
     // MARK: Save
 
-    static func save(key: String, value: String) throws {
+    nonisolated static func save(key: String, value: String) throws {
         guard let data = value.data(using: .utf8) else {
             throw KeychainError.saveFailed(errSecParam)
         }
@@ -80,7 +80,7 @@ enum KeychainHelper {
 
     // MARK: Get
 
-    static func get(key: String) throws -> String? {
+    nonisolated static func get(key: String) throws -> String? {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
@@ -108,7 +108,7 @@ enum KeychainHelper {
 
     // MARK: Delete
 
-    static func delete(key: String) throws {
+    nonisolated static func delete(key: String) throws {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,

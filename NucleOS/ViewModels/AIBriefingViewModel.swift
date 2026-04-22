@@ -72,10 +72,10 @@ final class AIBriefingViewModel: ObservableObject {
     // MARK: Init
 
     init(
-        service: any AIBriefingServiceProtocol = AIBriefingService(),
+        service: (any AIBriefingServiceProtocol)? = nil,
         healthSnapshot: HealthSnapshot? = nil
     ) {
-        self.service = service
+        self.service = service ?? AIBriefingService()
         self.healthSnapshot = healthSnapshot
     }
 

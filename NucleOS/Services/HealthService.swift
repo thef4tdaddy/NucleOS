@@ -88,10 +88,10 @@ class HealthService: HealthServiceProtocol {
     /// All quantity/category types the dashboard reads.
     private static let readTypes: Set<HKObjectType> = {
         var types = Set<HKObjectType>()
-        if let steps     = HKQuantityType.quantityType(forIdentifier: .stepCount)          { types.insert(steps) }
-        if let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate)           { types.insert(heartRate) }
+        if let steps     = HKQuantityType.quantityType(forIdentifier: .stepCount) { types.insert(steps) }
+        if let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate) { types.insert(heartRate) }
         if let calories  = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) { types.insert(calories) }
-        if let sleep     = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)         { types.insert(sleep) }
+        if let sleep     = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.insert(sleep) }
         return types
     }()
 
@@ -264,7 +264,7 @@ class HealthService: HealthServiceProtocol {
                     HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
                     HKCategoryValueSleepAnalysis.asleepCore.rawValue,
                     HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-                    HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepREM.rawValue
                 ]
 
                 let total = categorySamples.reduce(0.0) { acc, sample in
@@ -328,7 +328,7 @@ class HealthService: HealthServiceProtocol {
     /// - Performs steps, heart rate, sleep duration, and active calories fetches in parallel; if any individual fetch fails, that metric is set to `0` in the returned snapshot.
     /// - Returns: A `HealthSnapshot` containing `steps`, `heartRate`, `sleepDuration`, and `activeCalories`, where each metric is the fetched value or `0` if its fetch failed.
     func fetchSnapshot() async throws -> HealthSnapshot {
-        try await SentryConfig.traced(operation: "db.query", name: "HealthService.fetchSnapshot") {
+        await SentryConfig.traced(operation: "db.query", name: "HealthService.fetchSnapshot") {
         async let steps = fetchSteps()
         async let hr = fetchHeartRate()
         async let sleep = fetchSleep()

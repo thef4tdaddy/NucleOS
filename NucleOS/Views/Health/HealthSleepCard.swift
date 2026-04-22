@@ -28,10 +28,10 @@ struct HealthSleepCard: View {
     /// to replace these with real per-stage values.
     private var stages: [SleepStage] {
         let fractionData: [(label: String, color: Color, fraction: Double)] = [
-            ("Deep",  .accentPrimary,  0.25),
-            ("Light", .accentLight,    0.46),
-            ("REM",   .accentLavender, 0.20),
-            ("Awake", .textDim,        0.09),
+            ("Deep", .accentPrimary, 0.25),
+            ("Light", .accentLight, 0.46),
+            ("REM", .accentLavender, 0.20),
+            ("Awake", .textDim, 0.09)
         ]
 
         return fractionData.map { data in

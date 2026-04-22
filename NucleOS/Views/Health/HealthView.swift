@@ -88,4 +88,3 @@ struct HealthView: View {
         .frame(width: 900, height: 600)
         .background(Color.backgroundPrimary)
 }
-

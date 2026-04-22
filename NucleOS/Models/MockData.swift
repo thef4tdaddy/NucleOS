@@ -14,7 +14,7 @@ enum MockData {
     // MARK: - Tasks
 
     /// Returns a fresh set of tasks relative to the current calendar day.
-    static var tasks: [NucleTask] {
+    nonisolated static var tasks: [NucleTask] {
         let today = Calendar.current.startOfDay(for: Date())
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today
 
@@ -62,14 +62,14 @@ enum MockData {
                 isCompleted: false,
                 dueDate: tomorrow,
                 priority: .high
-            ),
+            )
         ]
     }
 
     // MARK: - Events
 
     /// Returns a fresh set of today's events relative to the current calendar day.
-    static var events: [NucleEvent] {
+    nonisolated static var events: [NucleEvent] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
@@ -109,13 +109,13 @@ enum MockData {
                 startDate: time(hour: 16, minute: 30),
                 endDate: time(hour: 17),
                 calendarColor: .custom("ff6b6b")
-            ),
+            )
         ]
     }
 
     // MARK: - Health
 
-    static let healthSnapshot = HealthSnapshot(
+    nonisolated static let healthSnapshot = HealthSnapshot(
         steps: 8_234,
         stepGoal: 10_000,
         heartRate: 72.0,
@@ -128,7 +128,7 @@ enum MockData {
     // MARK: - AI Briefing
 
     /// Returns a fresh briefing string reflecting the current mock data.
-    static var aiBriefing: String {
+    nonisolated static var aiBriefing: String {
         let snapshot = healthSnapshot
         let currentTasks = tasks
         let currentEvents = events

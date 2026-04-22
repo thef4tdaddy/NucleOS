@@ -40,7 +40,7 @@ struct DefaultHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .decimal
         numberFormatter.locale = Locale.current
-        
+
         let stepsStr = numberFormatter.string(from: NSNumber(value: snapshot.steps)) ?? "\(snapshot.steps)"
         let stepGoalStr = numberFormatter.string(from: NSNumber(value: snapshot.stepGoal)) ?? "\(snapshot.stepGoal)"
         lines.append("- Steps: \(stepsStr)" + (snapshot.stepGoal > 0 ? " of \(stepGoalStr) goal" : ""))

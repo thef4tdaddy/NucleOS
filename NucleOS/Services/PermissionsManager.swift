@@ -76,12 +76,12 @@ final class PermissionsManager: ObservableObject {
 
     /// `true` when the app has full or legacy authorized access to Reminders.
     var hasRemindersAccess: Bool {
-        remindersAuthStatus == .fullAccess || remindersAuthStatus == .authorized
+        remindersAuthStatus == .fullAccess
     }
 
     /// `true` when the app has full or legacy authorized access to Calendar.
     var hasCalendarAccess: Bool {
-        calendarAuthStatus == .fullAccess || calendarAuthStatus == .authorized
+        calendarAuthStatus == .fullAccess
     }
 
     /// `true` when the user has explicitly denied Reminders access.

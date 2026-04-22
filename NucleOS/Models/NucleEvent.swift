@@ -61,7 +61,7 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
     ///   - calendarColor: Color token of the source calendar. Defaults to `.accentPrimary`.
     ///   - isAllDay: Whether the event spans the full day. Defaults to `false`.
     ///   - location: Optional location string.
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         title: String,
         startDate: Date,
