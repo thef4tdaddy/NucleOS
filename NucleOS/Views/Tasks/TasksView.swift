@@ -15,8 +15,20 @@ struct TasksView: View {
     @State private var showCompleted = false
     @State private var permissionDenied = false
     @State private var currentLoadTask: Task<Void, Never>?
+    @State private var isCreatingTask = false
+    @State private var searchText = ""
+    @State private var showingQuickAdd = false
+    @State private var quickAddText = ""
 
     private let remindersService = RemindersService()
+
+    private var filteredTasks: [NucleTask] {
+        if searchText.isEmpty { return tasks }
+        return tasks.filter { task in
+            task.title.localizedCaseInsensitiveContains(searchText) ||
+            (task.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +60,22 @@ struct TasksView: View {
                         .tint(.accentPrimary)
                 }
 
+                Button(action: { showingQuickAdd = true }, label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(.accentPrimary)
+                })
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+                .accessibilityLabel("Quick add task")
+
+                Button(action: { isCreatingTask = true }, label: {
+                    Image(systemName: "square.and.pencil")
+                        .foregroundColor(.accentPrimary)
+                })
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+                .accessibilityLabel("Add task")
+
                 Button(action: {
                     currentLoadTask?.cancel()
                     currentLoadTask = Task { await loadTasks() }
@@ -61,6 +89,35 @@ struct TasksView: View {
             .padding(.horizontal, 32)
             .padding(.top, 32)
             .padding(.bottom, 24)
+
+            // Search bar
+            if !tasks.isEmpty {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.textMuted)
+                        .padding(.leading, 8)
+
+                    TextField("Search tasks...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .disableAutocorrection(true)
+
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.textMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.trailing, 8)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.backgroundCard)
+                )
+                .padding(.horizontal, 32)
+                .padding(.top, 16)
+            }
 
             Divider()
                 .background(Color.border)
@@ -143,19 +200,29 @@ struct TasksView: View {
             }
         }
         .background(Color.backgroundPrimary)
+        .sheet(isPresented: $isCreatingTask) {
+            TaskFormView(task: nil, isPresented: $isCreatingTask)
+        }
+        .sheet(isPresented: $showingQuickAdd) {
+            QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
+        }
         .task(priority: .userInitiated) {
             await loadTasks()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RemindersDataChanged"))) { _ in
+            currentLoadTask?.cancel()
+            currentLoadTask = Task { await loadTasks() }
         }
     }
 
     /// Tasks that have not yet been marked complete.
     private var incompleteTasks: [NucleTask] {
-        tasks.filter { !$0.isCompleted }
+        filteredTasks.filter { !$0.isCompleted }
     }
 
     /// Tasks that have been marked complete.
     private var completedTasks: [NucleTask] {
-        tasks.filter { $0.isCompleted }
+        filteredTasks.filter { $0.isCompleted }
     }
 
     /// Fetches all tasks from Reminders; sets `permissionDenied` if access is not granted.
@@ -218,57 +285,117 @@ struct TasksSection: View {
 struct TaskCardView: View {
     /// The task to display.
     let task: NucleTask
+    @State private var showingDeleteConfirmation = false
+    @State private var offset = CGSize.zero
+    @State private var isSwiped = false
+    @EnvironmentObject var appSettings: AppSettings
+
+    private var remindersProvider: RemindersServiceProtocol {
+        appSettings.useMockCalendarData ? MockRemindersService() : RemindersService()
+    }
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Checkbox
-            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
-                .foregroundColor(task.isCompleted ? .accentPrimary : .textMuted)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(task.title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(task.isCompleted ? .textMuted : .textPrimary)
-                    .strikethrough(task.isCompleted)
-
-                HStack(spacing: 12) {
-                    if let dueDate = task.dueDate {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 10))
-
-                            Text(formatDueDate(dueDate))
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(isOverdue(dueDate) ? .red : .textMuted)
-                    }
-
-                    // Only show priority badge for high priority (hide .none, .low, .medium)
-                    if task.priority == .high {
-                        HStack(spacing: 4) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .font(.system(size: 10))
-
-                            Text("High Priority")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.accentLavender)
-                    }
+        ZStack {
+            // Delete button background
+            HStack {
+                Spacer()
+                Button(action: { showingDeleteConfirmation = true }) {
+                    Image(systemName: "trash.fill")
+                        .foregroundColor(.white)
+                        .frame(width: 80, height: .infinity)
+                        .background(Color.red)
                 }
+                .buttonStyle(.plain)
             }
 
-            Spacer()
+            HStack(spacing: 16) {
+                // Checkbox
+                Button(action: toggleComplete) {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 20))
+                        .foregroundColor(task.isCompleted ? .accentPrimary : .textMuted)
+                }
+                .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(task.title)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(task.isCompleted ? .textMuted : .textPrimary)
+                        .strikethrough(task.isCompleted)
+
+                    HStack(spacing: 12) {
+                        if let dueDate = task.dueDate {
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 10))
+
+                                Text(formatDueDate(dueDate))
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(isOverdue(dueDate) ? .red : .textMuted)
+                        }
+
+                        if task.priority == .high {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .font(.system(size: 10))
+
+                                Text("High Priority")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.accentLavender)
+                        }
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.backgroundCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.border, lineWidth: 1)
+                    )
+            )
+            .offset(x: offset.width)
+            .gesture(
+                DragGesture()
+                    .onChanged { gesture in
+                        if gesture.translation.width < 0 {
+                            offset = CGSize(width: max(-80, gesture.translation.width), height: 0)
+                        }
+                    }
+                    .onEnded { _ in
+                        withAnimation(.easeInOut) {
+                            if offset.width < -40 {
+                                offset = CGSize(width: -80, height: 0)
+                                isSwiped = true
+                            } else {
+                                offset = .zero
+                                isSwiped = false
+                            }
+                        }
+                    }
+            )
+            .onTapGesture {
+                withAnimation(.easeInOut) {
+                    offset = .zero
+                    isSwiped = false
+                }
+            }
+            .confirmationDialog("Delete Task", isPresented: $showingDeleteConfirmation) {
+                Button("Delete Task", role: .destructive) {
+                    Task {
+                        try? await remindersProvider.deleteTask(task)
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to delete this task?")
+            }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.backgroundCard)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.border, lineWidth: 1)
-                )
-        )
     }
 
     /// Returns a relative date label ("Today", "Tomorrow", "Yesterday") or a medium-style date string.
@@ -291,6 +418,17 @@ struct TaskCardView: View {
     /// Returns `true` if `date` is in the past and the task is not yet complete.
     private func isOverdue(_ date: Date) -> Bool {
         return date < Date() && !task.isCompleted
+    }
+
+    /// Toggles the completion state of this task.
+    private func toggleComplete() {
+        Task {
+            var updatedTask = task
+            updatedTask.isCompleted.toggle()
+            if updatedTask.isCompleted {
+                try? await remindersProvider.completeTask(updatedTask)
+            }
+        }
     }
 }
 

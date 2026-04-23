@@ -56,6 +56,27 @@ enum RemindersServiceError: LocalizedError {
 class RemindersService: RemindersServiceProtocol {
     private var eventStore: EKEventStore { permissionsManager.eventStore }
     private let permissionsManager = PermissionsManager.shared
+    private var changeObserver: NSObjectProtocol?
+
+    init() {
+        setupChangeObserver()
+    }
+
+    deinit {
+        if let observer = changeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func setupChangeObserver() {
+        changeObserver = NotificationCenter.default.addObserver(
+            forName: .EKEventStoreChanged,
+            object: eventStore,
+            queue: .main
+        ) { _ in
+            NotificationCenter.default.post(name: NSNotification.Name("RemindersDataChanged"), object: nil)
+        }
+    }
 
     /// Fetches all reminders from EventKit, requesting permission if not yet determined.
     func fetchTasks() async throws -> [NucleTask] {
@@ -97,19 +118,77 @@ class RemindersService: RemindersServiceProtocol {
         }
     }
 
-    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
+    /// Creates a new reminder in the default Reminders list.
     func addTask(_ task: NucleTask) async throws {
-        throw RemindersServiceError.unimplemented
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        let reminder = EKReminder(eventStore: eventStore)
+        reminder.title = task.title
+        reminder.isCompleted = task.isCompleted
+        reminder.notes = task.notes
+
+        // Map priority back to RFC5545 values
+        switch task.priority {
+        case .none:
+            reminder.priority = 0
+        case .low:
+            reminder.priority = 7
+        case .medium:
+            reminder.priority = 5
+        case .high:
+            reminder.priority = 3
+        }
+
+        if let dueDate = task.dueDate {
+            reminder.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
+        }
+
+        reminder.calendar = eventStore.defaultCalendarForNewReminders()
+        try eventStore.save(reminder, commit: true)
     }
 
-    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
+    /// Marks an existing reminder as complete.
     func completeTask(_ task: NucleTask) async throws {
-        throw RemindersServiceError.unimplemented
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        let store = eventStore
+        let reminders = await Task.detached {
+            store.calendars(for: .reminder).flatMap { calendar in
+                store.reminders(in: [calendar]).filter { $0.title == task.title }
+            }
+        }.value
+
+        if let reminder = reminders.first(where: { $0.title == task.title }) {
+            reminder.isCompleted = true
+            reminder.completionDate = Date()
+            try eventStore.save(reminder, commit: true)
+        } else {
+            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Task not found"]))
+        }
     }
 
-    /// Not yet implemented; throws ``RemindersServiceError/unimplemented``.
+    /// Permanently removes a reminder.
     func deleteTask(_ task: NucleTask) async throws {
-        throw RemindersServiceError.unimplemented
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        let store = eventStore
+        let reminders = await Task.detached {
+            store.calendars(for: .reminder).flatMap { calendar in
+                store.reminders(in: [calendar]).filter { $0.title == task.title }
+            }
+        }.value
+
+        if let reminder = reminders.first(where: { $0.title == task.title }) {
+            try eventStore.remove(reminder, commit: true)
+        } else {
+            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Task not found"]))
+        }
     }
 
     // MARK: - Private Helpers
