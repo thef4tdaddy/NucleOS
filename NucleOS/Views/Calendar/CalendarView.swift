@@ -14,7 +14,7 @@ struct CalendarView: View {
     @State private var error: String?
     @State private var selectedDays = 7
     @State private var loadTask: Task<Void, Never>? = nil
-    @State private var showingMockData = false
+    @State private var permissionDenied = false
     @State private var selectedDate = Date()
     @State private var showMonthView = false
     @State private var showingDayTimeline = false
@@ -84,10 +84,11 @@ struct CalendarView: View {
         .sheet(isPresented: $isCreatingEvent) {
             EventFormView(event: nil, isPresented: $isCreatingEvent)
         }
-        .sheet(isPresented: $isEditingEvent, onDismiss: {
-            isEditingEvent = nil
-        }) { event in
-            EventFormView(event: event, isPresented: $isEditingEvent)
+        .sheet(item: $isEditingEvent) { event in
+            EventFormView(event: event, isPresented: Binding(
+                get: { isEditingEvent != nil },
+                set: { if !$0 { isEditingEvent = nil } }
+            ))
         }
         .sheet(isPresented: $showingQuickAdd) {
             QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
@@ -191,7 +192,12 @@ struct CalendarView: View {
                 .background(Color.border)
 
             // Content
-            if let error = error {
+            if permissionDenied {
+                PermissionBanner(permission: .calendar)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                Spacer()
+            } else if let error = error {
                 ErrorStateView(message: error)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if events.isEmpty && !isLoading {
@@ -215,6 +221,11 @@ struct CalendarView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CalendarDataChanged"))) { _ in
             startLoadEvents()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if permissionDenied {
+                startLoadEvents()
+            }
+        }
     }
 
     /// Events sorted and grouped by calendar day (start-of-day key).
@@ -235,17 +246,15 @@ struct CalendarView: View {
         }
     }
 
-    /// Fetches events for the selected day range; falls back to mock data if permission is denied.
+    /// Fetches events for the selected day range; shows permission banner if access is denied.
     private func loadEvents() async {
         isLoading = true
         error = nil
-        showingMockData = false
+        permissionDenied = false
 
         do {
             if showMonthView {
-                let monthStart = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: selectedDate))!
-                guard let monthEnd = Calendar.current.date(byAdding: .month, value: 1, to: monthStart) else { return }
-                events = try await calendarProvider.fetchEvents(from: monthStart, to: monthEnd)
+                events = try await calendarProvider.fetchEvents(for: selectedDate)
             } else {
                 if selectedDays == 1 {
                     events = try await calendarProvider.fetchTodayEvents()
@@ -254,34 +263,11 @@ struct CalendarView: View {
                 }
             }
         } catch CalendarServiceError.permissionDenied {
-            showingMockData = true
-            do {
-                if showMonthView {
-                    let monthStart = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: selectedDate))!
-                    guard let monthEnd = Calendar.current.date(byAdding: .month, value: 1, to: monthStart) else { return }
-                    events = try await mockService.fetchEvents(from: monthStart, to: monthEnd)
-                } else {
-                    if selectedDays == 1 {
-                        events = try await mockService.fetchTodayEvents()
-                    } else {
-                        events = try await mockService.fetchUpcomingEvents(days: selectedDays)
-                    }
-                }
-                self.error = "Showing sample data. Grant Calendar access in System Settings to see your events."
-            } catch {
-                self.error = "Calendar permission denied: \(error.localizedDescription)"
-                events = []
-            }
+            permissionDenied = true
+            events = []
         } catch {
             self.error = error.localizedDescription
         }
-        isLoading = false
-        loadTask = nil
-    }
-        } catch {
-            self.error = error.localizedDescription
-        }
-
         isLoading = false
         loadTask = nil
     }

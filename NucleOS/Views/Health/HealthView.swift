@@ -48,6 +48,11 @@ struct HealthView: View {
         .task {
             await viewModel.evaluatePermissionState()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if viewModel.permissionState == .denied {
+                Task { await viewModel.evaluatePermissionState() }
+            }
+        }
     }
 
     // MARK: - Content
@@ -62,7 +67,8 @@ struct HealthView: View {
         case .unavailable:
             HealthUnavailableView()
         case .denied:
-            HealthPermissionDeniedView()
+            PermissionBanner(permission: .health)
+            Spacer()
         case .empty:
             HealthEmptyStateView()
         case .authorized:

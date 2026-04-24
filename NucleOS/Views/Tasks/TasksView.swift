@@ -124,27 +124,10 @@ struct TasksView: View {
 
             // Content
             if permissionDenied {
-                VStack(spacing: 16) {
-                    Image(systemName: "checklist")
-                        .font(.system(size: 48))
-                        .foregroundColor(.textMuted)
-
-                    Text("Grant Reminders access to see your tasks")
-                        .font(.system(size: 16))
-                        .foregroundColor(.textSecondary)
-                        .multilineTextAlignment(.center)
-
-                    Button(action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
-                    }, label: {
-                        Text("Open System Settings")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.accentPrimary)
-                    })
-                    .buttonStyle(.plain)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
+                PermissionBanner(permission: .reminders)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                Spacer()
             } else if let error = error {
                 ErrorStateView(message: error)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -212,6 +195,12 @@ struct TasksView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RemindersDataChanged"))) { _ in
             currentLoadTask?.cancel()
             currentLoadTask = Task { await loadTasks() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if permissionDenied {
+                currentLoadTask?.cancel()
+                currentLoadTask = Task { await loadTasks() }
+            }
         }
     }
 

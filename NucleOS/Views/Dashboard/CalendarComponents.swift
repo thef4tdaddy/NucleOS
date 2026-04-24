@@ -38,13 +38,7 @@ struct CalendarPanelView: View {
                     ForEach(0..<3, id: \.self) { _ in EventShimmerRow() }
                 }
             } else if permissionDenied {
-                PermissionDeniedView(
-                    icon: "calendar",
-                    message: "Grant Calendar access to see your events",
-                    action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
-                    }
-                )
+                PermissionBanner(permission: .calendar)
             } else if let error = error {
                 ErrorStateView(message: error, retry: {
                     Task { await loadEvents() }
@@ -81,6 +75,11 @@ struct CalendarPanelView: View {
         }
         .task(priority: .userInitiated) {
             await loadEvents()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if permissionDenied {
+                Task { await loadEvents() }
+            }
         }
     }
 

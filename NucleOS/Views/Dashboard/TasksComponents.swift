@@ -38,13 +38,7 @@ struct TasksPanelView: View {
                     ForEach(0..<4, id: \.self) { _ in TaskShimmerRow() }
                 }
             } else if permissionDenied {
-                PermissionDeniedView(
-                    icon: "checklist",
-                    message: "Grant Reminders access to see your tasks",
-                    action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders")!)
-                    }
-                )
+                PermissionBanner(permission: .reminders)
             } else if let error = error {
                 ErrorStateView(message: error, retry: {
                     Task { await loadTasks() }
@@ -78,6 +72,11 @@ struct TasksPanelView: View {
         )
         .task(priority: .userInitiated) {
             await loadTasks()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if permissionDenied {
+                Task { await loadTasks() }
+            }
         }
     }
 
