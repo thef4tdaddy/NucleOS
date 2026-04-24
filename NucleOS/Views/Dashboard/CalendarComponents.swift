@@ -81,6 +81,9 @@ struct CalendarPanelView: View {
                 Task { await loadEvents() }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CalendarDataChanged"))) { _ in
+            Task { await loadEvents() }
+        }
     }
 
     /// Fetches today's events from Calendar; sets `permissionDenied` if access is not granted.

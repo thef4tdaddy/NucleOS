@@ -78,6 +78,9 @@ struct TasksPanelView: View {
                 Task { await loadTasks() }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RemindersDataChanged"))) { _ in
+            Task { await loadTasks() }
+        }
     }
 
     /// Fetches incomplete tasks from Reminders; sets `permissionDenied` if access is not granted.

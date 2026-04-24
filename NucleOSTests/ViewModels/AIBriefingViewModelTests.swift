@@ -50,6 +50,8 @@ struct AIBriefingViewModelTests {
         let defaults = UserDefaults.standard
         let hadPreviousValue = defaults.object(forKey: AIBriefingService.autoGenerateKey) != nil
         let previousValue = defaults.bool(forKey: AIBriefingService.autoGenerateKey)
+        let previousCache = defaults.string(forKey: "nucleos.ai.briefing.cache")
+        let previousTimestamp = defaults.object(forKey: "nucleos.ai.briefing.timestamp")
 
         defer {
             if hadPreviousValue {
@@ -57,9 +59,21 @@ struct AIBriefingViewModelTests {
             } else {
                 defaults.removeObject(forKey: AIBriefingService.autoGenerateKey)
             }
+            if let previousCache {
+                defaults.set(previousCache, forKey: "nucleos.ai.briefing.cache")
+            } else {
+                defaults.removeObject(forKey: "nucleos.ai.briefing.cache")
+            }
+            if let previousTimestamp {
+                defaults.set(previousTimestamp, forKey: "nucleos.ai.briefing.timestamp")
+            } else {
+                defaults.removeObject(forKey: "nucleos.ai.briefing.timestamp")
+            }
         }
 
         defaults.set(false, forKey: AIBriefingService.autoGenerateKey)
+        defaults.removeObject(forKey: "nucleos.ai.briefing.cache")
+        defaults.removeObject(forKey: "nucleos.ai.briefing.timestamp")
         let vm = AIBriefingViewModel(service: MockAIBriefingService())
         await vm.initialise()
         if case .idle = vm.state {

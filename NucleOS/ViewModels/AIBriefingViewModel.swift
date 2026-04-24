@@ -69,6 +69,10 @@ final class AIBriefingViewModel: ObservableObject {
     /// Guards against concurrent generation calls. Safe to access on `@MainActor`.
     private var isGenerating = false
 
+    private static let cacheTextKey = "nucleos.ai.briefing.cache"
+    private static let cacheTimestampKey = "nucleos.ai.briefing.timestamp"
+    private static let cacheTTL: TimeInterval = 4 * 60 * 60
+
     // MARK: Init
 
     init(
@@ -93,11 +97,38 @@ final class AIBriefingViewModel: ObservableObject {
             state = .unavailable
             return
         }
-        state = .idle
+
+        if let (cached, cachedAt) = loadCachedBriefing() {
+            lastUpdated = cachedAt
+            state = .loaded(cached)
+            let age = Date().timeIntervalSince(cachedAt)
+            guard age >= Self.cacheTTL else { return }
+        } else {
+            state = .idle
+        }
+
         guard UserDefaults.standard.bool(forKey: AIBriefingService.autoGenerateKey) else {
             return
         }
         await generate()
+    }
+
+    // MARK: - Cache
+
+    /// Returns the cached briefing text and its timestamp, or `nil` if no cache exists.
+    private func loadCachedBriefing() -> (String, Date)? {
+        guard
+            let text = UserDefaults.standard.string(forKey: Self.cacheTextKey),
+            !text.isEmpty
+        else { return nil }
+        let ts = UserDefaults.standard.double(forKey: Self.cacheTimestampKey)
+        guard ts > 0 else { return nil }
+        return (text, Date(timeIntervalSinceReferenceDate: ts))
+    }
+
+    private func saveCachedBriefing(_ text: String, at date: Date) {
+        UserDefaults.standard.set(text, forKey: Self.cacheTextKey)
+        UserDefaults.standard.set(date.timeIntervalSinceReferenceDate, forKey: Self.cacheTimestampKey)
     }
 
     // MARK: - Generation
@@ -126,7 +157,9 @@ final class AIBriefingViewModel: ObservableObject {
         do {
             let snapshot = isHealthSummaryEnabled ? healthSnapshot : nil
             let briefing = try await service.generate(healthSnapshot: snapshot)
-            lastUpdated = Date()
+            let now = Date()
+            lastUpdated = now
+            saveCachedBriefing(briefing, at: now)
             state = .loaded(briefing)
         } catch AIBriefingError.noProviderAvailable {
             print("[AIBriefing] Generation failed: no provider available.")
