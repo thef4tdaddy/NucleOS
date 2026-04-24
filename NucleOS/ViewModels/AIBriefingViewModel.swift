@@ -89,6 +89,7 @@ final class AIBriefingViewModel: ObservableObject {
     /// into the hierarchy, so the availability check runs each time.
     func initialise() async {
         guard service.hasAvailableProvider else {
+            print("[AIBriefing] No provider available — configure MLX model path or add a cloud API key in Settings.")
             state = .unavailable
             return
         }
@@ -115,6 +116,7 @@ final class AIBriefingViewModel: ObservableObject {
     func generate() async {
         guard !isGenerating else { return }
         guard service.hasAvailableProvider else {
+            print("[AIBriefing] generate() called but no provider is available.")
             state = .unavailable
             return
         }
@@ -127,9 +129,10 @@ final class AIBriefingViewModel: ObservableObject {
             lastUpdated = Date()
             state = .loaded(briefing)
         } catch AIBriefingError.noProviderAvailable {
+            print("[AIBriefing] Generation failed: no provider available.")
             state = .unavailable
         } catch {
-            // Transient error — let the user retry if the provider is still available.
+            print("[AIBriefing] Generation failed: \(error)")
             state = .error(error)
         }
     }

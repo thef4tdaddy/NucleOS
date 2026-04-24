@@ -76,6 +76,10 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
     ///   - availability: Busy/free status. Defaults to `.busy`.
     ///   - reminderOffset: Minutes before event for alert. Defaults to `nil`.
     ///   - isDeclined: Whether user declined. Defaults to `false`.
+    static func == (lhs: NucleEvent, rhs: NucleEvent) -> Bool {
+        lhs.id == rhs.id
+    }
+
     nonisolated init(
         id: UUID = UUID(),
         title: String,

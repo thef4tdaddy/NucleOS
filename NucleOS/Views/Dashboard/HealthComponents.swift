@@ -19,6 +19,7 @@ struct HealthStripView: View {
             HStack(spacing: 16) {
                 HealthMetricCard(
                     icon: "figure.walk",
+                    assetIconName: "icon-steps",
                     label: "Steps",
                     value: snapshot.steps.formatted(),
                     goal: snapshot.stepGoal.formatted(),
@@ -37,6 +38,7 @@ struct HealthStripView: View {
 
                 HealthMetricCard(
                     icon: "bed.double.fill",
+                    assetIconName: "icon-sleep",
                     label: "Sleep",
                     value: snapshot.sleepFormatted,
                     goal: snapshot.sleepGoalFormatted,
@@ -57,6 +59,7 @@ struct HealthStripView: View {
             HStack(spacing: 16) {
                 HealthMetricCard(
                     icon: "figure.walk",
+                    assetIconName: "icon-steps",
                     label: "Steps",
                     value: "—",
                     goal: "—",
@@ -75,6 +78,7 @@ struct HealthStripView: View {
 
                 HealthMetricCard(
                     icon: "bed.double.fill",
+                    assetIconName: "icon-sleep",
                     label: "Sleep",
                     value: "—",
                     goal: "—",
@@ -97,18 +101,38 @@ struct HealthStripView: View {
 
 struct HealthMetricCard: View {
     let icon: String
+    let assetIconName: String?
     let label: String
     let value: String
     let goal: String
     let progress: Double
     let color: Color
 
+    init(icon: String, assetIconName: String? = nil, label: String, value: String, goal: String, progress: Double, color: Color) {
+        self.icon = icon
+        self.assetIconName = assetIconName
+        self.label = label
+        self.value = value
+        self.goal = goal
+        self.progress = progress
+        self.color = color
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
+                if let assetName = assetIconName {
+                    Image(assetName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(color)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(color)
+                }
 
                 Spacer()
 

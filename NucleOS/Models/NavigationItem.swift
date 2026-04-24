@@ -31,4 +31,15 @@ enum NavigationItem: String, CaseIterable, Identifiable {
         case .settings: return "gearshape.fill"
         }
     }
+
+    /// Custom image asset name when a branded icon exists; `nil` falls back to SF Symbol.
+    var customIconName: String? {
+        switch self {
+        case .tasks:      return "icon-tasks"
+        case .calendar:   return "icon-calendar"
+        case .health:     return "icon-health-body"
+        case .aiBriefing: return "icon-ai"
+        default:          return nil
+        }
+    }
 }

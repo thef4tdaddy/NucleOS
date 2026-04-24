@@ -39,6 +39,7 @@ struct DefaultHealthSummaryPromptBuilder: HealthSummaryPromptBuilder {
         lines.append("Health data for today (aggregate metrics only):")
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .decimal
+        numberFormatter.usesGroupingSeparator = false
         numberFormatter.locale = Locale.current
 
         let stepsStr = numberFormatter.string(from: NSNumber(value: snapshot.steps)) ?? "\(snapshot.steps)"

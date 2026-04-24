@@ -17,6 +17,8 @@ struct TaskFormView: View {
     @State private var priority: NucleTask.Priority = .medium
     @State private var dueDate = Date()
     @State private var hasDueDate = false
+    @State private var isRecurring = false
+    @State private var category: TaskCategory?
     @State private var isLoading = false
     @State private var error: String?
 
@@ -34,6 +36,8 @@ struct TaskFormView: View {
                 _dueDate = State(initialValue: dueDate)
                 _hasDueDate = State(initialValue: true)
             }
+            _isRecurring = State(initialValue: task.isRecurring)
+            _category = State(initialValue: task.category)
         }
     }
 
@@ -72,16 +76,28 @@ struct TaskFormView: View {
                             .datePickerStyle(.compact)
                     }
                 }
+
+                Section(header: Text("Options")) {
+                    Toggle("Repeat Daily", isOn: $isRecurring)
+                        .toggleStyle(.switch)
+
+                    Picker("Category", selection: $category) {
+                        Text("None").tag(TaskCategory?.none)
+                        ForEach(TaskCategory.allCases) { category in
+                            Text(category.rawValue.capitalized).tag(TaskCategory?.some(category))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
             }
             .navigationTitle(task == nil ? "New Task" : "Edit Task")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button(action: saveTask) {
                         Text(task == nil ? "Create" : "Save")
                     }
@@ -108,12 +124,17 @@ struct TaskFormView: View {
             isCompleted: task?.isCompleted ?? false,
             dueDate: hasDueDate ? dueDate : nil,
             notes: notes.isEmpty ? nil : notes,
-            priority: priority
+            priority: priority,
+            category: category,
+            isRecurring: isRecurring,
+            calendarItemIdentifier: task?.calendarItemIdentifier ?? ""
         )
 
         Task {
             do {
-                if task == nil {
+                if task != nil {
+                    try await remindersService.updateTask(taskToSave)
+                } else {
                     try await remindersService.addTask(taskToSave)
                 }
                 dismiss()

@@ -75,12 +75,12 @@ struct QuickAddEventView: View {
             .padding()
             .background(Color.backgroundPrimary)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         isPresented = false
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button(action: saveEvent) {
                         Text("Add")
                     }
@@ -143,6 +143,7 @@ enum NaturalLanguageParser {
             }
         }
 
+        title = title.trimmingCharacters(in: .whitespaces)
         guard !title.isEmpty else { return nil }
 
         // Parse date/time
@@ -181,7 +182,10 @@ enum NaturalLanguageParser {
             } else {
                 locationString = remaining
             }
-            location = locationString.trimmingCharacters(in: .whitespaces)
+            let trimmedLocation = locationString.trimmingCharacters(in: .whitespaces)
+            if !trimmedLocation.isEmpty && extractTime(from: trimmedLocation.lowercased()) == nil {
+                location = trimmedLocation
+            }
         }
 
         return NucleEvent(

@@ -16,6 +16,8 @@ protocol RemindersServiceProtocol {
     func fetchTasks() async throws -> [NucleTask]
     /// Saves a new reminder to the default Reminders list.
     func addTask(_ task: NucleTask) async throws
+    /// Updates an existing reminder's fields using its calendarItemIdentifier.
+    func updateTask(_ task: NucleTask) async throws
     /// Marks an existing reminder as complete.
     func completeTask(_ task: NucleTask) async throws
     /// Permanently removes a reminder.
@@ -145,50 +147,84 @@ class RemindersService: RemindersServiceProtocol {
             reminder.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
         }
 
+        if task.isRecurring {
+            let rule = EKRecurrenceRule(
+                recurrenceWith: .daily,
+                interval: 1,
+                end: nil
+            )
+            reminder.addRecurrenceRule(rule)
+        }
+
         reminder.calendar = eventStore.defaultCalendarForNewReminders()
         try eventStore.save(reminder, commit: true)
     }
 
-    /// Marks an existing reminder as complete.
+    /// Updates title, notes, priority, and dueDate of an existing reminder.
+    func updateTask(_ task: NucleTask) async throws {
+        guard permissionsManager.hasRemindersAccess else {
+            throw RemindersServiceError.permissionDenied
+        }
+
+        guard !task.calendarItemIdentifier.isEmpty,
+              let item = eventStore.calendarItem(withIdentifier: task.calendarItemIdentifier),
+              let reminder = item as? EKReminder else {
+            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Task not found by identifier"]))
+        }
+
+        reminder.title = task.title
+        reminder.notes = task.notes
+
+        switch task.priority {
+        case .none:   reminder.priority = 0
+        case .low:    reminder.priority = 7
+        case .medium: reminder.priority = 5
+        case .high:   reminder.priority = 3
+        }
+
+        if let dueDate = task.dueDate {
+            reminder.dueDateComponents = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute], from: dueDate)
+        } else {
+            reminder.dueDateComponents = nil
+        }
+
+        try eventStore.save(reminder, commit: true)
+    }
+
+    /// Marks an existing reminder as complete using its calendarItemIdentifier.
     func completeTask(_ task: NucleTask) async throws {
         guard permissionsManager.hasRemindersAccess else {
             throw RemindersServiceError.permissionDenied
         }
 
-        let store = eventStore
-        let reminders = await Task.detached {
-            store.calendars(for: .reminder).flatMap { calendar in
-                store.reminders(in: [calendar]).filter { $0.title == task.title }
-            }
-        }.value
-
-        if let reminder = reminders.first(where: { $0.title == task.title }) {
-            reminder.isCompleted = true
-            reminder.completionDate = Date()
-            try eventStore.save(reminder, commit: true)
-        } else {
-            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Task not found"]))
+        guard !task.calendarItemIdentifier.isEmpty,
+              let item = eventStore.calendarItem(withIdentifier: task.calendarItemIdentifier),
+              let reminder = item as? EKReminder else {
+            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Task not found by identifier"]))
         }
+
+        reminder.isCompleted = true
+        reminder.completionDate = Date()
+        try eventStore.save(reminder, commit: true)
     }
 
-    /// Permanently removes a reminder.
+    /// Permanently removes a reminder using its calendarItemIdentifier.
     func deleteTask(_ task: NucleTask) async throws {
         guard permissionsManager.hasRemindersAccess else {
             throw RemindersServiceError.permissionDenied
         }
 
-        let store = eventStore
-        let reminders = await Task.detached {
-            store.calendars(for: .reminder).flatMap { calendar in
-                store.reminders(in: [calendar]).filter { $0.title == task.title }
-            }
-        }.value
-
-        if let reminder = reminders.first(where: { $0.title == task.title }) {
-            try eventStore.remove(reminder, commit: true)
-        } else {
-            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Task not found"]))
+        guard !task.calendarItemIdentifier.isEmpty,
+              let item = eventStore.calendarItem(withIdentifier: task.calendarItemIdentifier),
+              let reminder = item as? EKReminder else {
+            throw RemindersServiceError.fetchFailed(NSError(domain: "RemindersService", code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Task not found by identifier"]))
         }
+
+        try eventStore.remove(reminder, commit: true)
     }
 
     // MARK: - Private Helpers
@@ -221,7 +257,9 @@ class RemindersService: RemindersServiceProtocol {
             dueDate: ekReminder.dueDateComponents?.date,
             completionDate: ekReminder.completionDate,
             notes: ekReminder.notes,
-            priority: priority
+            priority: priority,
+            isRecurring: ekReminder.hasRecurrenceRules,
+            calendarItemIdentifier: ekReminder.calendarItemIdentifier
         )
     }
 }
@@ -242,6 +280,12 @@ actor MockRemindersService: RemindersServiceProtocol {
     /// Appends `task` to the in-memory list.
     func addTask(_ task: NucleTask) async throws {
         tasks.append(task)
+    }
+
+    /// Replaces the task with the matching `id` in the in-memory list.
+    func updateTask(_ task: NucleTask) async throws {
+        guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
+        tasks[index] = task
     }
 
     /// Marks the task with the matching `id` as completed.

@@ -23,6 +23,12 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var notes: String?
     /// Relative importance of the task.
     var priority: Priority
+    /// Optional category/tag for the task.
+    var category: TaskCategory?
+    /// Whether this task repeats (simple recurrence flag).
+    var isRecurring: Bool
+    /// EventKit calendar item identifier for stable cross-reload lookups.
+    var calendarItemIdentifier: String
 
     enum Priority: Int, CaseIterable, Hashable, Sendable {
         /// No priority set — maps to EventKit priority 0 ("none").
@@ -52,7 +58,10 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         dueDate: Date? = nil,
         completionDate: Date? = nil,
         notes: String? = nil,
-        priority: Priority = .medium
+        priority: Priority = .medium,
+        category: TaskCategory? = nil,
+        isRecurring: Bool = false,
+        calendarItemIdentifier: String = ""
     ) {
         self.id = id
         self.title = title
@@ -61,5 +70,18 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         self.completionDate = completionDate
         self.notes = notes
         self.priority = priority
+        self.category = category
+        self.isRecurring = isRecurring
+        self.calendarItemIdentifier = calendarItemIdentifier
     }
+
+    static func == (lhs: NucleTask, rhs: NucleTask) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+/// Category tags for tasks.
+enum TaskCategory: String, CaseIterable, Sendable, Identifiable {
+    case personal, work, shopping, health, finance, home, travel, other
+    var id: String { rawValue }
 }
