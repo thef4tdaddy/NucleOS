@@ -127,9 +127,7 @@ struct AIBriefingPanelView: View {
 
             switch viewModel.state {
             case .loading:
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(.accentLavender)
+                EmptyView()
 
             case .loaded:
                 if let updated = viewModel.lastUpdated {
@@ -179,14 +177,7 @@ struct AIBriefingPanelView: View {
     }
 
     private var loadingView: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.small)
-                .tint(.accentLavender)
-            Text("Generating your briefing…")
-                .font(.system(size: 13))
-                .foregroundColor(.textSecondary)
-        }
+        AIBriefingShimmer()
     }
 
     private func loadedView(briefing: String) -> some View {
@@ -203,11 +194,22 @@ struct AIBriefingPanelView: View {
     }
 
     private func errorView(error: Error) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Failed to generate: \(error.localizedDescription)")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("AI unavailable — \(error.localizedDescription)")
                 .font(.system(size: 13))
-                .foregroundColor(.red)
-            idleView
+                .foregroundColor(.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: { Task { await viewModel.generate() } }) {
+                Text("Retry")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.accentPrimary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.accentPrimary.opacity(0.12))
+                    .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
         }
     }
 

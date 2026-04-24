@@ -25,12 +25,6 @@ struct TasksPanelView: View {
 
                 Spacer()
 
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.accentPrimary)
-                }
-
                 Button(action: {}, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.accentPrimary)
@@ -39,18 +33,27 @@ struct TasksPanelView: View {
                 .disabled(true) // Disabled until add functionality is implemented
             }
 
-            if permissionDenied {
+            if isLoading && tasks.isEmpty {
+                VStack(spacing: 12) {
+                    ForEach(0..<4, id: \.self) { _ in TaskShimmerRow() }
+                }
+            } else if permissionDenied {
                 PermissionDeniedView(
                     icon: "checklist",
                     message: "Grant Reminders access to see your tasks",
                     action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders")!)
                     }
                 )
             } else if let error = error {
-                ErrorStateView(message: error)
-            } else if tasks.isEmpty && !isLoading {
-                EmptyStateView(message: "No tasks found")
+                ErrorStateView(message: error, retry: {
+                    Task { await loadTasks() }
+                })
+            } else if tasks.isEmpty {
+                EmptyStateView(
+                    message: "No tasks for today 🎉",
+                    subtext: "Enjoy your free time"
+                )
             } else {
                 ScrollView(content: {
                     VStack(spacing: 12) {
@@ -173,8 +176,8 @@ struct TaskRow: View {
 
 /// Placeholder shown when a list has no items to display.
 struct EmptyStateView: View {
-    /// Short explanation of the empty state.
     let message: String
+    var subtext: String? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -185,18 +188,24 @@ struct EmptyStateView: View {
             Text(message)
                 .font(.system(size: 13))
                 .foregroundColor(.textSecondary)
+
+            if let subtext {
+                Text(subtext)
+                    .font(.system(size: 12))
+                    .foregroundColor(.textMuted)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-/// Placeholder shown when a data fetch encounters an error.
+/// Placeholder shown when a data fetch encounters an error, with an optional retry button.
 struct ErrorStateView: View {
-    /// Localised error description to display.
     let message: String
+    var retry: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 32))
                 .foregroundColor(.textMuted)
@@ -205,6 +214,19 @@ struct ErrorStateView: View {
                 .font(.system(size: 13))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
+
+            if let retry {
+                Button(action: retry) {
+                    Text("Retry")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.accentPrimary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.accentPrimary.opacity(0.12))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

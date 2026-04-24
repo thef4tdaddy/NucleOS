@@ -13,6 +13,7 @@ struct CalendarPanelView: View {
     @State private var isLoading = false
     @State private var error: String?
     @State private var permissionDenied = false
+    @State private var isCreatingEvent = false
 
     private let calendarService = CalendarService()
 
@@ -25,12 +26,6 @@ struct CalendarPanelView: View {
 
                 Spacer()
 
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.accentPrimary)
-                }
-
                 Button(action: { isCreatingEvent = true }, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.accentPrimary)
@@ -38,18 +33,27 @@ struct CalendarPanelView: View {
                 .buttonStyle(.plain)
             }
 
-            if permissionDenied {
+            if isLoading && events.isEmpty {
+                VStack(spacing: 12) {
+                    ForEach(0..<3, id: \.self) { _ in EventShimmerRow() }
+                }
+            } else if permissionDenied {
                 PermissionDeniedView(
                     icon: "calendar",
                     message: "Grant Calendar access to see your events",
                     action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!)
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
                     }
                 )
             } else if let error = error {
-                ErrorStateView(message: error)
-            } else if events.isEmpty && !isLoading {
-                EmptyStateView(message: "No events today")
+                ErrorStateView(message: error, retry: {
+                    Task { await loadEvents() }
+                })
+            } else if events.isEmpty {
+                EmptyStateView(
+                    message: "Nothing scheduled",
+                    subtext: "Your day is wide open"
+                )
             } else {
                 ScrollView(content: {
                     VStack(spacing: 12) {

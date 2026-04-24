@@ -34,7 +34,8 @@ struct DashboardView: View {
                 HealthStripView(
                     snapshot: healthViewModel.snapshot ?? (
                         healthViewModel.permissionState == .notDetermined ? MockData.healthSnapshot : nil
-                    )
+                    ),
+                    isLoading: healthViewModel.isLoading
                 )
                 .padding(.horizontal, 32)
 

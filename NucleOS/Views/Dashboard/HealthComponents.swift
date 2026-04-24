@@ -9,13 +9,19 @@ import SwiftUI
 
 struct HealthStripView: View {
     let snapshot: HealthSnapshot?
+    var isLoading: Bool
 
-    init(snapshot: HealthSnapshot? = MockData.healthSnapshot) {
+    init(snapshot: HealthSnapshot? = MockData.healthSnapshot, isLoading: Bool = false) {
         self.snapshot = snapshot
+        self.isLoading = isLoading
     }
 
     var body: some View {
-        if let snapshot = snapshot {
+        if isLoading && snapshot == nil {
+            HStack(spacing: 16) {
+                ForEach(0..<4, id: \.self) { _ in HealthMetricShimmerBlock() }
+            }
+        } else if let snapshot = snapshot {
             HStack(spacing: 16) {
                 HealthMetricCard(
                     icon: "figure.walk",
