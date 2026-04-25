@@ -10,7 +10,7 @@ import SwiftUI
 /// Dashboard panel that lists the user's upcoming incomplete tasks from Reminders.
 struct TasksPanelView: View {
     @State private var tasks: [NucleTask] = []
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var error: String?
     @State private var permissionDenied = false
 
@@ -218,16 +218,8 @@ struct ErrorStateView: View {
                 .multilineTextAlignment(.center)
 
             if let retry {
-                Button(action: retry) {
-                    Text("Retry")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.accentPrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Color.accentPrimary.opacity(0.12))
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
+                Button("Retry", action: retry)
+                    .nucleosSecondaryButton()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -99,19 +99,16 @@ class RemindersService: RemindersServiceProtocol {
             }
             let predicate = eventStore.predicateForReminders(in: calendars)
 
-            let store = eventStore
-            let ekReminders = try await Task.detached {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
-                    store.fetchReminders(matching: predicate) { ekReminders in
-                        if let ekReminders = ekReminders {
-                            continuation.resume(returning: ekReminders)
-                        } else {
-                            // nil indicates a fetch failure, not an empty result
-                            continuation.resume(throwing: RemindersServiceError.fetchReturnedNil)
-                        }
+            let ekReminders = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
+                eventStore.fetchReminders(matching: predicate) { ekReminders in
+                    if let ekReminders = ekReminders {
+                        continuation.resume(returning: ekReminders)
+                    } else {
+                        // nil indicates a fetch failure, not an empty result
+                        continuation.resume(throwing: RemindersServiceError.fetchReturnedNil)
                     }
                 }
-            }.value
+            }
 
             return ekReminders.compactMap { convertToNucleTask(from: $0) }
         } catch {

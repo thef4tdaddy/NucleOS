@@ -1,77 +1,123 @@
 // MonthCalendarView.swift
 import SwiftUI
 
-/// A grid view representing a month calendar.
-/// Shows a dot under days that have events.
+/// A month grid calendar. Tapping a day selects it; event pills (up to 3) appear under the day number.
 struct MonthCalendarView: View {
     @Binding var selectedDate: Date
     let events: [NucleEvent]
     @State private var displayedMonth: Date = Date()
 
-    private var daysInMonth: [Date] {
-        var dates: [Date] = []
-        let calendar = Calendar.current
-        // Start at first day of month
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth)) else { return [] }
+    private let calendar = Calendar.current
+
+    // Weekday letter headers Sun–Sat
+    private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
+
+    private var monthStart: Date {
+        calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth)) ?? displayedMonth
+    }
+
+    /// Dates in the month plus leading blanks to align to Sunday.
+    private var gridDates: [Date?] {
+        let startWeekday = calendar.component(.weekday, from: monthStart) - 1 // 0 = Sunday
         let range = calendar.range(of: .day, in: .month, for: monthStart) ?? 1..<1
+        var dates: [Date?] = Array(repeating: nil, count: startWeekday)
         for day in range {
-            if let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) {
-                dates.append(date)
-            }
+            dates.append(calendar.date(byAdding: .day, value: day - 1, to: monthStart))
         }
         return dates
     }
 
-    private func hasEvents(on date: Date) -> Bool {
-        let calendar = Calendar.current
-        return events.contains(where: { calendar.isDate($0.startDate, inSameDayAs: date) })
+    private func eventsOn(_ date: Date) -> [NucleEvent] {
+        events.filter { calendar.isDate($0.startDate, inSameDayAs: date) }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
+    private func eventColor(_ event: NucleEvent) -> Color {
+        switch event.calendarColor {
+        case .accentPrimary:  return .accentPrimary
+        case .accentLight:    return .accentLight
+        case .accentLavender: return .accentLavender
+        case .custom(let h):  return Color(hex: h)
+        }
     }
 
     var body: some View {
-        VStack {
+        VStack(spacing: 12) {
+            // Month navigation
             HStack {
                 Button(action: { changeMonth(by: -1) }) {
                     Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.accentPrimary)
                 }
+                .buttonStyle(.plain)
 
                 Spacer()
 
                 Button(action: jumpToToday) {
                     Text(monthYearString)
-                        .font(.headline)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.textPrimary)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.textPrimary)
 
                 Spacer()
 
                 Button(action: { changeMonth(by: 1) }) {
                     Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.accentPrimary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 8)
+
+            // Weekday headers
+            HStack(spacing: 0) {
+                ForEach(weekdaySymbols.indices, id: \.self) { i in
+                    Text(weekdaySymbols[i])
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.textMuted)
+                        .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal)
 
-            let columns = Array(repeating: GridItem(.flexible()), count: 7)
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(daysInMonth, id: \ .self) { date in
-                    DayCell(date: date, isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate), hasEvent: hasEvents(on: date))
+            // Day grid
+            let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+            LazyVGrid(columns: columns, spacing: 2) {
+                ForEach(gridDates.indices, id: \.self) { i in
+                    if let date = gridDates[i] {
+                        DayCell(
+                            date: date,
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            isToday: calendar.isDateInToday(date),
+                            events: eventsOn(date),
+                            eventColorFn: eventColor
+                        )
                         .onTapGesture { selectedDate = date }
+                    } else {
+                        Color.clear.frame(minHeight: 52)
+                    }
                 }
             }
         }
-        .padding()
-        .background(VisualEffectBlur(blurStyle: .systemMaterial))
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.backgroundCard)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border, lineWidth: 1))
+        )
     }
 
     private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: displayedMonth)
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: displayedMonth)
     }
 
     private func changeMonth(by offset: Int) {
-        if let newMonth = Calendar.current.date(byAdding: .month, value: offset, to: displayedMonth) {
-            displayedMonth = newMonth
+        if let d = calendar.date(byAdding: .month, value: offset, to: displayedMonth) {
+            displayedMonth = d
         }
     }
 
@@ -81,42 +127,64 @@ struct MonthCalendarView: View {
     }
 }
 
-/// A single day cell used inside ``MonthCalendarView``.
+/// A single day cell with day number and up to 3 event pills.
 struct DayCell: View {
     let date: Date
     let isSelected: Bool
-    let hasEvent: Bool
+    let isToday: Bool
+    let events: [NucleEvent]
+    let eventColorFn: (NucleEvent) -> Color
+
+    private var dayNumber: String {
+        let f = DateFormatter()
+        f.dateFormat = "d"
+        return f.string(from: date)
+    }
+
     var body: some View {
-        VStack {
+        VStack(spacing: 3) {
+            // Day number
             Text(dayNumber)
-                .font(.subheadline)
-                .foregroundColor(isSelected ? .accentPrimary : .textPrimary)
-            if hasEvent {
-                Circle()
-                    .fill(Color.accentPrimary)
-                    .frame(width: 6, height: 6)
+                .font(.system(size: 13, weight: isToday ? .bold : .regular))
+                .foregroundColor(isSelected ? .white : isToday ? .accentPrimary : .textPrimary)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle()
+                        .fill(isSelected ? Color.accentPrimary : Color.clear)
+                )
+
+            // Event pills — up to 3, then "+N more"
+            VStack(spacing: 2) {
+                ForEach(events.prefix(2), id: \.id) { event in
+                    Text(event.title)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.textPrimary)
+                        .lineLimit(1)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(eventColorFn(event).opacity(0.3))
+                        .cornerRadius(3)
+                }
+
+                if events.count > 2 {
+                    Text("+\(events.count - 2) more")
+                        .font(.system(size: 9))
+                        .foregroundColor(.textMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 40)
-        .background(isSelected ? Color.accentPrimary.opacity(0.2) : Color.clear)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .frame(minHeight: 56, alignment: .top)
+        .background(isSelected ? Color.accentPrimary.opacity(0.12) : Color.clear)
         .cornerRadius(6)
     }
-    private var dayNumber: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter.string(from: date)
-    }
-}
-
-// Simple blur view for glassmorphism effect
-struct VisualEffectBlur: UIViewRepresentable {
-    var blurStyle: UIBlurEffect.Style = .systemMaterial
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        UIVisualEffectView(effect: UIBlurEffect(style: blurStyle))
-    }
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
 #Preview {
-    MonthCalendarView(selectedDate: .constant(Date()), events: [])
+    MonthCalendarView(selectedDate: .constant(Date()), events: MockData.events)
+        .frame(width: 600)
+        .background(Color.backgroundPrimary)
 }

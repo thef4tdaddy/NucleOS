@@ -6,6 +6,7 @@
 //  All tests run on @MainActor to match SettingsViewModel's isolation.
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 

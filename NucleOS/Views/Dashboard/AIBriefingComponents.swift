@@ -200,16 +200,8 @@ struct AIBriefingPanelView: View {
                 .foregroundColor(.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: { Task { await viewModel.generate() } }) {
-                Text("Retry")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.accentPrimary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(Color.accentPrimary.opacity(0.12))
-                    .cornerRadius(6)
-            }
-            .buttonStyle(.plain)
+            Button("Retry") { Task { await viewModel.generate() } }
+                .nucleosSecondaryButton()
         }
     }
 

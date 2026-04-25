@@ -10,7 +10,7 @@ import SwiftUI
 /// Full-page view that displays all Reminders tasks, grouped into incomplete and completed sections.
 struct TasksView: View {
     @State private var tasks: [NucleTask] = []
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var error: String?
     @State private var showCompleted = false
     @State private var permissionDenied = false
@@ -66,7 +66,7 @@ struct TasksView: View {
                 })
                 .buttonStyle(.plain)
                 .disabled(isLoading)
-                .accessibilityLabel("Quick add task")
+                .help("Quick add task")
 
                 Button(action: { isCreatingTask = true }, label: {
                     Image(systemName: "square.and.pencil")
@@ -74,7 +74,7 @@ struct TasksView: View {
                 })
                 .buttonStyle(.plain)
                 .disabled(isLoading)
-                .accessibilityLabel("Add task")
+                .help("Add task")
 
                 Button(action: {
                     currentLoadTask?.cancel()
@@ -85,6 +85,7 @@ struct TasksView: View {
                 })
                 .buttonStyle(.plain)
                 .disabled(isLoading)
+                .help("Refresh tasks")
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
@@ -185,9 +186,11 @@ struct TasksView: View {
         .background(Color.backgroundPrimary)
         .sheet(isPresented: $isCreatingTask) {
             TaskFormView(task: nil, isPresented: $isCreatingTask)
+                .frame(minWidth: 480, minHeight: 520)
         }
         .sheet(isPresented: $showingQuickAdd) {
             QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
+                .frame(minWidth: 440, minHeight: 380)
         }
         .task(priority: .userInitiated) {
             await loadTasks()
@@ -291,7 +294,8 @@ struct TaskCardView: View {
                 Button(action: { showingDeleteConfirmation = true }) {
                     Image(systemName: "trash.fill")
                         .foregroundColor(.white)
-                        .frame(width: 80, height: .infinity)
+                        .frame(width: 80)
+                        .frame(maxHeight: .infinity)
                         .background(Color.red)
                 }
                 .buttonStyle(.plain)
@@ -305,6 +309,7 @@ struct TaskCardView: View {
                         .foregroundColor(task.isCompleted ? .accentPrimary : .textMuted)
                 }
                 .buttonStyle(.plain)
+                .help(task.isCompleted ? "Mark incomplete" : "Mark complete")
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(task.title)

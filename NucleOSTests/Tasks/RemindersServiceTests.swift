@@ -5,6 +5,7 @@
 //  Swift Testing suite for RemindersService
 //
 
+import Foundation
 import Testing
 @testable import NucleOS
 

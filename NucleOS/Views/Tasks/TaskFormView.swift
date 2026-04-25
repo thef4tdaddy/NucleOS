@@ -42,79 +42,131 @@ struct TaskFormView: View {
     }
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Task Details")) {
-                    TextField("Task Title", text: $title)
-                        .textFieldStyle(.roundedBorder)
-                        .disableAutocorrection(true)
+        VStack(spacing: 0) {
+            // NucleOS branded header — no macOS window chrome
+            HStack(spacing: 12) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color.backgroundCard)
+                    .foregroundColor(.textSecondary)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.border, lineWidth: 1))
 
-                    TextEditor(text: $notes)
-                        .frame(minHeight: 80)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.border, lineWidth: 1)
-                        )
+                Spacer()
+
+                Text(task == nil ? "New Task" : "Edit Task")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+
+                Spacer()
+
+                if isLoading {
+                    ProgressView().tint(.accentPrimary).scaleEffect(0.8)
+                } else {
+                    Button(task == nil ? "Create" : "Save") { saveTask() }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(title.isEmpty ? Color.accentPrimary.opacity(0.35) : Color.accentPrimary)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .disabled(title.isEmpty)
                 }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.backgroundCard)
 
-                Section(header: Text("Priority")) {
-                    Picker("Priority", selection: $priority) {
-                        Text("None").tag(NucleTask.Priority.none)
-                        Text("Low").tag(NucleTask.Priority.low)
-                        Text("Medium").tag(NucleTask.Priority.medium)
-                        Text("High").tag(NucleTask.Priority.high)
-                    }
-                    .pickerStyle(.segmented)
-                }
+            Divider().background(Color.border)
 
-                Section(header: Text("Due Date")) {
-                    Toggle("Set Due Date", isOn: $hasDueDate)
-                        .toggleStyle(.switch)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    formSection(title: "Task Details") {
+                        VStack(alignment: .leading, spacing: 16) {
+                            FormTextField(title: "Title", text: $title, placeholder: "Task title")
 
-                    if hasDueDate {
-                        DatePicker("Due", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
-                            .datePickerStyle(.compact)
-                    }
-                }
-
-                Section(header: Text("Options")) {
-                    Toggle("Repeat Daily", isOn: $isRecurring)
-                        .toggleStyle(.switch)
-
-                    Picker("Category", selection: $category) {
-                        Text("None").tag(TaskCategory?.none)
-                        ForEach(TaskCategory.allCases) { category in
-                            Text(category.rawValue.capitalized).tag(TaskCategory?.some(category))
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Notes")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.textSecondary)
+                                TextEditor(text: $notes)
+                                    .frame(minHeight: 80)
+                                    .padding(8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.backgroundCard)
+                                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.border, lineWidth: 1))
+                                    )
+                            }
                         }
                     }
-                    .pickerStyle(.menu)
-                }
-            }
-            .navigationTitle(task == nil ? "New Task" : "Edit Task")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+
+                    formSection(title: "Priority") {
+                        Picker("", selection: $priority) {
+                            Text("None").tag(NucleTask.Priority.none)
+                            Text("Low").tag(NucleTask.Priority.low)
+                            Text("Medium").tag(NucleTask.Priority.medium)
+                            Text("High").tag(NucleTask.Priority.high)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    formSection(title: "Due Date") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle("Set Due Date", isOn: $hasDueDate).toggleStyle(.switch)
+                            if hasDueDate {
+                                DatePicker("Due", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
+                                    .datePickerStyle(.compact)
+                            }
+                        }
+                    }
+
+                    formSection(title: "Options") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle("Repeat Daily", isOn: $isRecurring).toggleStyle(.switch)
+                            Picker("Category", selection: $category) {
+                                Text("None").tag(TaskCategory?.none)
+                                ForEach(TaskCategory.allCases) { cat in
+                                    Text(cat.rawValue.capitalized).tag(TaskCategory?.some(cat))
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: saveTask) {
-                        Text(task == nil ? "Create" : "Save")
-                    }
-                    .disabled(title.isEmpty || isLoading)
-                }
+                .padding(24)
             }
-            .alert("Error", isPresented: $error.isNotEmpty, actions: {
-                Button("OK", role: .cancel) { }
-            }) {
-                Text(error ?? "")
+            .background(Color.backgroundPrimary)
+        }
+        .background(Color.backgroundPrimary)
+        .alert("Error", isPresented: $error.isNotEmpty) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(error ?? "")
+        }
+    }
+
+    private func formSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.textPrimary)
+            VStack(alignment: .leading, spacing: 12) {
+                content()
             }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.backgroundCard)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border, lineWidth: 1))
+            )
         }
     }
 
     private func saveTask() {
         guard !title.isEmpty else { return }
-
         isLoading = true
         error = nil
 

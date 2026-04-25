@@ -72,7 +72,7 @@ class CalendarService: CalendarServiceProtocol {
             forName: .EKEventStoreChanged,
             object: eventStore,
             queue: .main
-        ) { [weak self] _ in
+        ) { _ in
             // Post notification that calendar data has changed
             NotificationCenter.default.post(name: NSNotification.Name("CalendarDataChanged"), object: nil)
         }
@@ -106,6 +106,17 @@ class CalendarService: CalendarServiceProtocol {
         return try await fetchEvents(from: monthStart, to: monthEnd)
     }
 
+    /// Fetches events in the half-open range [today, today + days).
+    func fetchUpcomingEvents(days: Int) async throws -> [NucleEvent] {
+        guard days > 0 else { return [] }
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let endDate = calendar.date(byAdding: .day, value: days, to: startOfDay) else {
+            return []
+        }
+        return try await fetchEvents(from: startOfDay, to: endDate)
+    }
+
     /// Creates a new event in the user's calendar.
     func createEvent(_ event: NucleEvent) async throws {
         guard permissionsManager.hasCalendarAccess else {
@@ -135,8 +146,9 @@ class CalendarService: CalendarServiceProtocol {
             calendars: nil
         )
 
+        let store = eventStore
         let ekEvents = await Task.detached {
-            eventStore.events(matching: predicate)
+            store.events(matching: predicate)
         }.value
 
         if let ekEvent = ekEvents.first(where: { $0.title == event.title && $0.startDate == event.startDate }) {
@@ -164,8 +176,9 @@ class CalendarService: CalendarServiceProtocol {
             calendars: nil
         )
 
+        let store = eventStore
         let ekEvents = await Task.detached {
-            eventStore.events(matching: predicate)
+            store.events(matching: predicate)
         }.value
 
         if let ekEvent = ekEvents.first(where: { $0.title == event.title && $0.startDate == event.startDate }) {
@@ -236,7 +249,7 @@ class CalendarService: CalendarServiceProtocol {
         }) ?? false
 
         // Get reminder offset from alarms
-        let reminderOffset = ekEvent.alarms?.first?.relativeOffset.map { Int(-$0 / 60) }
+        let reminderOffset = ekEvent.alarms?.first.map { Int(-$0.relativeOffset / 60) }
 
         return NucleEvent(
             title: title,
@@ -278,6 +291,20 @@ class MockCalendarService: CalendarServiceProtocol {
     func fetchTodayEvents() async throws -> [NucleEvent] {
         return MockData.events
     }
+
+    /// Returns events for the month containing `month`.
+    func fetchEvents(for month: Date) async throws -> [NucleEvent] {
+        return MockData.events
+    }
+
+    /// No-op stub — mock does not persist mutations.
+    func createEvent(_ event: NucleEvent) async throws {}
+
+    /// No-op stub — mock does not persist mutations.
+    func updateEvent(_ event: NucleEvent) async throws {}
+
+    /// No-op stub — mock does not persist mutations.
+    func deleteEvent(_ event: NucleEvent) async throws {}
 
     /// Returns events over the next `days` days, starting from today.
     /// Passing `days <= 0` returns an empty array.

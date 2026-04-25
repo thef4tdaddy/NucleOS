@@ -5,6 +5,7 @@
 //  AI-powered calendar analysis and insights
 //
 
+import Combine
 import Foundation
 
 /// Service that provides AI-powered calendar insights and suggestions.

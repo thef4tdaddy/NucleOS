@@ -10,7 +10,7 @@ import SwiftUI
 /// Dashboard panel that lists today's calendar events from EventKit.
 struct CalendarPanelView: View {
     @State private var events: [NucleEvent] = []
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var error: String?
     @State private var permissionDenied = false
     @State private var isCreatingEvent = false
@@ -31,6 +31,7 @@ struct CalendarPanelView: View {
                         .foregroundColor(.accentPrimary)
                 })
                 .buttonStyle(.plain)
+                .help("Add event")
             }
 
             if isLoading && events.isEmpty {
@@ -72,6 +73,7 @@ struct CalendarPanelView: View {
         )
         .sheet(isPresented: $isCreatingEvent) {
             EventFormView(event: nil, isPresented: $isCreatingEvent)
+                .frame(minWidth: 520, minHeight: 640)
         }
         .task(priority: .userInitiated) {
             await loadEvents()

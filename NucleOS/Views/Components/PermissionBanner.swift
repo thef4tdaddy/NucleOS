@@ -63,9 +63,7 @@ struct PermissionBanner: View {
             Button("Open Settings") {
                 NSWorkspace.shared.open(permission.settingsURL)
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.accentPrimary)
-            .buttonStyle(.plain)
+            .nucleosPrimaryButton()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

@@ -88,7 +88,7 @@ struct QuickAddEventView: View {
                 }
             }
         }
-        .onChange(of: text) { _ in
+        .onChange(of: text) {
             parseInput()
         }
         .onAppear {

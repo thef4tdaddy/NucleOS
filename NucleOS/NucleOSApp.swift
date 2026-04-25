@@ -9,14 +9,18 @@ import SwiftUI
 
 @main
 struct NucleOSApp: App {
+    @StateObject private var appSettings = AppSettings()
 
     init() {
         SentryConfig.setup()
+        // Pre-warm the shared EKEventStore so first EventKit fetch is fast
+        _ = PermissionsManager.shared
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(appSettings)
         }
     }
 }

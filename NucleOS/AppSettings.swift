@@ -1,4 +1,5 @@
 // AppSettings.swift
+import Combine
 import SwiftUI
 
 /// Global observable settings for the app.

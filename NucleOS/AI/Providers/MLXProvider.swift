@@ -59,6 +59,14 @@ actor MLXProvider: LLMProvider {
     /// Value type: `String` (absolute file path).
     nonisolated static let modelPathKey = "mlxModelPath"
 
+    // MARK: - Dependencies
+
+    nonisolated(unsafe) let userDefaults: UserDefaults
+
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+    }
+
     // MARK: - Cached state
 
     #if canImport(MLXLLM)
@@ -75,7 +83,7 @@ actor MLXProvider: LLMProvider {
     /// `true` when a non-empty model path is configured in UserDefaults
     /// **and** the current platform supports MLX (Apple Silicon, macOS 14+).
     nonisolated var isAvailable: Bool {
-        guard let path = UserDefaults.standard.string(forKey: Self.modelPathKey),
+        guard let path = userDefaults.string(forKey: Self.modelPathKey),
               !path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }

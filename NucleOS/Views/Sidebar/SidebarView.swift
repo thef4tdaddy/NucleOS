@@ -108,20 +108,11 @@ struct NavigationItemRow: View {
                     .fill(isSelected ? Color.accentPrimary : Color.clear)
                     .frame(width: 6, height: 6)
 
-                // Icon — custom asset when available, SF Symbol otherwise
-                if let customIcon = item.customIconName {
-                    Image(customIcon)
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                        .foregroundColor(isSelected ? .accentLight : .textSecondary)
-                } else {
-                    Image(systemName: item.iconName)
-                        .font(.system(size: 14))
-                        .foregroundColor(isSelected ? .textPrimary : .textSecondary)
-                        .frame(width: 20)
-                }
+                // Icon — SF Symbol only in sidebar for clean, consistent look
+                Image(systemName: item.iconName)
+                    .font(.system(size: 14))
+                    .foregroundColor(isSelected ? .textPrimary : .textSecondary)
+                    .frame(width: 20)
 
                 // Label
                 Text(item.rawValue)
@@ -138,6 +129,7 @@ struct NavigationItemRow: View {
             )
         })
         .buttonStyle(.plain)
+        .help(item.rawValue)
     }
 }
 

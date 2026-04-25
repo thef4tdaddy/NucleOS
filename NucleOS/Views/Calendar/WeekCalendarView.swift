@@ -91,12 +91,22 @@ struct WeekCalendarView: View {
             ScrollView {
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(weekDates, id: \.self) { date in
-                        VStack(spacing: 8) {
+                        VStack(spacing: 6) {
                             ForEach(eventsForDate(date), id: \.id) { event in
                                 EventWeekCard(event: event)
                             }
+                            if eventsForDate(date).isEmpty {
+                                Color.clear.frame(height: 1)
+                            }
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(4)
+                        .background(
+                            calendar.isDateInToday(date)
+                                ? Color.accentPrimary.opacity(0.06)
+                                : Color.clear
+                        )
+                        .cornerRadius(6)
                     }
                 }
                 .padding(.horizontal, 16)
