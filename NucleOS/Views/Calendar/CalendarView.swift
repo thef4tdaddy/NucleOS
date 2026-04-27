@@ -3,10 +3,12 @@
 //  NucleOS
 //
 //  Full calendar view — Day / Week / Month / List modes.
-//  Single unified header, no duplicate title bars.
+//  NUC-72: single header, date nav in all views
+//  NUC-73: calendar filter popover
 //
 
 import SwiftUI
+import EventKit
 
 /// Full-page view for Calendar. Supports Day, Week, Month, and List modes.
 struct CalendarView: View {
@@ -30,6 +32,11 @@ struct CalendarView: View {
     @State private var quickAddText = ""
     @State private var showingQuickAdd = false
 
+    // NUC-73: calendar filter
+    @State private var showingCalendarFilter = false
+    @State private var allCalendars: [EKCalendar] = []
+    @State private var visibleCalendarIDs: Set<String> = []
+
     private let calendarService = CalendarService()
     private let mockService = MockCalendarService()
     @EnvironmentObject var appSettings: AppSettings
@@ -38,7 +45,16 @@ struct CalendarView: View {
         appSettings.useMockCalendarData ? mockService : calendarService
     }
 
-    private var calendar: Calendar { .current }
+    private var cal: Calendar { .current }
+
+    // Events filtered by visible calendars
+    private var filteredEvents: [NucleEvent] {
+        guard !visibleCalendarIDs.isEmpty else { return events }
+        return events.filter { event in
+            guard let calID = event.calendarIdentifier else { return true }
+            return visibleCalendarIDs.contains(calID)
+        }
+    }
 
     // MARK: - Body
 
@@ -63,18 +79,25 @@ struct CalendarView: View {
         .background(Color.backgroundPrimary)
         .sheet(isPresented: $isCreatingEvent) {
             EventFormView(event: nil, isPresented: $isCreatingEvent)
-                .frame(minWidth: 500, minHeight: 560)
+                .frame(minWidth: 480, minHeight: 540)
         }
         .sheet(item: $isEditingEvent) { event in
             EventFormView(event: event, isPresented: Binding(
                 get: { isEditingEvent != nil },
                 set: { if !$0 { isEditingEvent = nil } }
             ))
-            .frame(minWidth: 500, minHeight: 560)
+            .frame(minWidth: 480, minHeight: 540)
         }
         .sheet(isPresented: $showingQuickAdd) {
             QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
                 .frame(minWidth: 440, minHeight: 380)
+        }
+        .popover(isPresented: $showingCalendarFilter, arrowEdge: .top) {
+            CalendarFilterPopover(
+                calendars: allCalendars,
+                visibleIDs: $visibleCalendarIDs
+            )
+            .frame(width: 280)
         }
         .task(priority: .userInitiated) { await loadEvents() }
         .onChange(of: viewMode) { _, _ in startLoadEvents() }
@@ -84,6 +107,7 @@ struct CalendarView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             if permissionDenied { startLoadEvents() }
         }
+        .onAppear { loadCalendarList() }
     }
 
     // MARK: - Header
@@ -109,7 +133,7 @@ struct CalendarView: View {
 
             Spacer()
 
-            // Date navigation
+            // Date navigation — present in all modes (NUC-72)
             HStack(spacing: 4) {
                 Button(action: navigateBack) {
                     Image(systemName: "chevron.left")
@@ -169,6 +193,17 @@ struct CalendarView: View {
                 ProgressView().tint(.accentPrimary).scaleEffect(0.7)
             }
 
+            // NUC-73: filter button
+            Button(action: { showingCalendarFilter.toggle() }) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .foregroundColor(
+                        (!allCalendars.isEmpty && visibleCalendarIDs.count < allCalendars.count)
+                        ? .accentLavender : .accentPrimary
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("Filter calendars")
+
             Button(action: { showingQuickAdd = true }) {
                 Image(systemName: "plus.circle.fill")
                     .foregroundColor(.accentPrimary)
@@ -204,15 +239,20 @@ struct CalendarView: View {
         case .day:
             DayTimelineView(
                 date: selectedDate,
-                events: events.filter { calendar.isDate($0.startDate, inSameDayAs: selectedDate) }
+                events: filteredEvents.filter { cal.isDate($0.startDate, inSameDayAs: selectedDate) },
+                onEditEvent: { event in isEditingEvent = event }
             )
 
         case .week:
-            WeekCalendarView(selectedDate: $selectedDate, events: events)
+            WeekCalendarView(
+                selectedDate: $selectedDate,
+                events: filteredEvents,
+                onEditEvent: { event in isEditingEvent = event }
+            )
 
         case .month:
             ScrollView {
-                MonthCalendarView(selectedDate: $selectedDate, events: events)
+                MonthCalendarView(selectedDate: $selectedDate, events: filteredEvents)
                     .padding(32)
             }
 
@@ -223,14 +263,16 @@ struct CalendarView: View {
 
     private var listView: some View {
         Group {
-            if events.isEmpty && !isLoading {
+            if filteredEvents.isEmpty && !isLoading {
                 EmptyStateView(message: "No events scheduled")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     VStack(spacing: 24) {
                         ForEach(groupedEventsByDay, id: \.key) { day, dayEvents in
-                            DayEventsSection(date: day, events: dayEvents)
+                            DayEventsSection(date: day, events: dayEvents) { event in
+                                isEditingEvent = event
+                            }
                         }
                     }
                     .padding(.vertical, 24)
@@ -248,10 +290,10 @@ struct CalendarView: View {
             f.dateFormat = "EEEE, MMMM d, yyyy"
             return f.string(from: selectedDate)
         case .week:
-            let start = calendar.date(
-                from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate)
+            let start = cal.date(
+                from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate)
             ) ?? selectedDate
-            let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start
+            let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
             f.dateFormat = "MMM d"
             return "\(f.string(from: start)) – \(f.string(from: end))"
         case .month:
@@ -263,28 +305,30 @@ struct CalendarView: View {
     }
 
     private var groupedEventsByDay: [(key: Date, value: [NucleEvent])] {
-        let grouped = Dictionary(grouping: events) { e in
-            calendar.startOfDay(for: e.startDate)
+        let grouped = Dictionary(grouping: filteredEvents) { e in
+            cal.startOfDay(for: e.startDate)
         }
         return grouped.sorted { $0.key < $1.key }
     }
 
     private func navigateBack() {
-        selectedDate = offset(selectedDate, by: -1)
+        selectedDate = offsetDate(selectedDate, by: -1)
+        startLoadEvents()
     }
 
     private func navigateForward() {
-        selectedDate = offset(selectedDate, by: 1)
+        selectedDate = offsetDate(selectedDate, by: 1)
+        startLoadEvents()
     }
 
-    private func offset(_ date: Date, by amount: Int) -> Date {
+    private func offsetDate(_ date: Date, by amount: Int) -> Date {
         switch viewMode {
-        case .day:
-            return calendar.date(byAdding: .day, value: amount, to: date) ?? date
+        case .day, .list:
+            return cal.date(byAdding: .day, value: amount, to: date) ?? date
         case .week:
-            return calendar.date(byAdding: .weekOfYear, value: amount, to: date) ?? date
-        case .month, .list:
-            return calendar.date(byAdding: .month, value: amount, to: date) ?? date
+            return cal.date(byAdding: .weekOfYear, value: amount, to: date) ?? date
+        case .month:
+            return cal.date(byAdding: .month, value: amount, to: date) ?? date
         }
     }
 
@@ -315,14 +359,104 @@ struct CalendarView: View {
         isLoading = false
         loadTask = nil
     }
+
+    private func loadCalendarList() {
+        guard !appSettings.useMockCalendarData else { return }
+        allCalendars = calendarService.fetchCalendars()
+        let saved = UserDefaults.standard.stringArray(forKey: "visible_calendar_ids")
+        if let saved {
+            visibleCalendarIDs = Set(saved)
+        } else {
+            visibleCalendarIDs = Set(allCalendars.map { $0.calendarIdentifier })
+        }
+    }
 }
 
-// MARK: - Day events section (list view)
+// MARK: - Calendar Filter Popover (NUC-73)
 
-/// A labelled group of ``EventCardView`` rows for a single calendar day.
+struct CalendarFilterPopover: View {
+    let calendars: [EKCalendar]
+    @Binding var visibleIDs: Set<String>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Calendars")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+                Spacer()
+                Button("All") {
+                    visibleIDs = Set(calendars.map { $0.calendarIdentifier })
+                    persist()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundColor(.accentPrimary)
+
+                Text("·").foregroundColor(.textMuted).padding(.horizontal, 4)
+
+                Button("None") {
+                    visibleIDs = []
+                    persist()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundColor(.accentPrimary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider().background(Color.border)
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(calendars, id: \.calendarIdentifier) { cal in
+                        Button(action: {
+                            if visibleIDs.contains(cal.calendarIdentifier) {
+                                visibleIDs.remove(cal.calendarIdentifier)
+                            } else {
+                                visibleIDs.insert(cal.calendarIdentifier)
+                            }
+                            persist()
+                        }) {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(Color(cgColor: cal.cgColor))
+                                    .frame(width: 12, height: 12)
+                                Text(cal.title)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.textPrimary)
+                                Spacer()
+                                Image(systemName: visibleIDs.contains(cal.calendarIdentifier)
+                                      ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(visibleIDs.contains(cal.calendarIdentifier)
+                                                     ? .accentPrimary : .textMuted)
+                                    .font(.system(size: 16))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(maxHeight: 320)
+        }
+        .background(Color.backgroundCard)
+    }
+
+    private func persist() {
+        UserDefaults.standard.set(Array(visibleIDs), forKey: "visible_calendar_ids")
+    }
+}
+
+// MARK: - Day events section (list view, NUC-74: tap to edit)
+
 struct DayEventsSection: View {
     let date: Date
     let events: [NucleEvent]
+    var onEdit: ((NucleEvent) -> Void)? = nil
 
     private let calendar = Calendar.current
 
@@ -346,7 +480,7 @@ struct DayEventsSection: View {
 
             VStack(spacing: 8) {
                 ForEach(events.sorted { $0.startDate < $1.startDate }, id: \.id) { event in
-                    EventCardView(event: event)
+                    EventCardView(event: event, onEdit: { onEdit?(event) })
                 }
             }
             .padding(.horizontal, 32)
@@ -368,11 +502,12 @@ struct DayEventsSection: View {
 
 // MARK: - Event card (list view)
 
-/// A full-width card for the list view with swipe-to-delete.
 struct EventCardView: View {
     let event: NucleEvent
+    var onEdit: (() -> Void)? = nil
+
     @State private var showingDeleteConfirmation = false
-    @State private var offset = CGSize.zero
+    @State private var cardOffset = CGSize.zero
     @State private var isSwiped = false
 
     @EnvironmentObject var appSettings: AppSettings
@@ -410,8 +545,7 @@ struct EventCardView: View {
                     HStack(spacing: 16) {
                         HStack(spacing: 6) {
                             Image(systemName: "clock").font(.system(size: 11))
-                            Text(timeRange)
-                                .font(.system(size: 12))
+                            Text(timeRange).font(.system(size: 12))
                         }
                         .foregroundColor(.textMuted)
 
@@ -437,34 +571,42 @@ struct EventCardView: View {
                     .fill(Color.backgroundCard)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border, lineWidth: 1))
             )
-            .offset(x: offset.width)
+            .offset(x: cardOffset.width)
             .gesture(
                 DragGesture()
                     .onChanged { g in
                         if g.translation.width < 0 {
-                            offset = CGSize(width: max(-80, g.translation.width), height: 0)
+                            cardOffset = CGSize(width: max(-80, g.translation.width), height: 0)
                         }
                     }
                     .onEnded { _ in
                         withAnimation(.easeInOut) {
-                            if offset.width < -40 {
-                                offset = CGSize(width: -80, height: 0)
+                            if cardOffset.width < -40 {
+                                cardOffset = CGSize(width: -80, height: 0)
                                 isSwiped = true
                             } else {
-                                offset = .zero
+                                cardOffset = .zero
                                 isSwiped = false
                             }
                         }
                     }
             )
             .onTapGesture {
-                withAnimation(.easeInOut) { offset = .zero; isSwiped = false }
+                if isSwiped {
+                    withAnimation(.easeInOut) { cardOffset = .zero; isSwiped = false }
+                } else {
+                    onEdit?()
+                }
             }
             .confirmationDialog("Delete Event", isPresented: $showingDeleteConfirmation) {
                 Button("Delete Event", role: .destructive) {
-                    Task { try? await provider.deleteEvent(event) }
+                    Task {
+                        try? await provider.deleteEvent(event)
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("CalendarDataChanged"), object: nil)
+                    }
                 }
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Are you sure you want to delete this event?")
             }

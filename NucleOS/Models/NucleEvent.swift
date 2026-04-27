@@ -39,6 +39,10 @@ enum EventColor: Hashable, Sendable, Equatable {
 struct NucleEvent: Identifiable, Equatable, Sendable {
     /// Stable identifier used to correlate events across reloads.
     let id: UUID
+    /// EventKit unique identifier — used for update/delete operations.
+    var eventIdentifier: String?
+    /// The EKCalendar identifier this event belongs to.
+    var calendarIdentifier: String?
     /// User-visible title of the event.
     var title: String
     /// The date and time the event begins.
@@ -62,26 +66,14 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
     /// Whether the user has declined this event invitation.
     var isDeclined: Bool
 
-    /// Creates a new `NucleEvent`.
-    /// - Parameters:
-    ///   - id: Stable identifier; defaults to a new `UUID`.
-    ///   - title: User-visible event title.
-    ///   - startDate: Event start date/time.
-    ///   - endDate: Event end date/time.
-    ///   - calendarColor: Color token of the source calendar. Defaults to `.accentPrimary`.
-    ///   - isAllDay: Whether the event spans the full day. Defaults to `false`.
-    ///   - location: Optional location string.
-    ///   - notes: Optional description text.
-    ///   - url: Optional URL.
-    ///   - availability: Busy/free status. Defaults to `.busy`.
-    ///   - reminderOffset: Minutes before event for alert. Defaults to `nil`.
-    ///   - isDeclined: Whether user declined. Defaults to `false`.
     static func == (lhs: NucleEvent, rhs: NucleEvent) -> Bool {
         lhs.id == rhs.id
     }
 
     nonisolated init(
         id: UUID = UUID(),
+        eventIdentifier: String? = nil,
+        calendarIdentifier: String? = nil,
         title: String,
         startDate: Date,
         endDate: Date,
@@ -95,6 +87,8 @@ struct NucleEvent: Identifiable, Equatable, Sendable {
         isDeclined: Bool = false
     ) {
         self.id = id
+        self.eventIdentifier = eventIdentifier
+        self.calendarIdentifier = calendarIdentifier
         self.title = title
         self.startDate = startDate
         self.endDate = endDate

@@ -110,7 +110,7 @@ struct QuickAddEventView: View {
 
         Task {
             do {
-                try await calendarService.createEvent(event)
+                try await calendarService.createEvent(event, calendarIdentifier: nil)
                 isPresented = false
             } catch {
                 self.error = "Failed to create event: \(error.localizedDescription)"

@@ -80,6 +80,11 @@ class RemindersService: RemindersServiceProtocol {
         }
     }
 
+    /// Returns EKCalendars for Reminders lists, sorted by title (NUC-73).
+    func fetchReminderLists() -> [EKCalendar] {
+        eventStore.calendars(for: .reminder).sorted { $0.title < $1.title }
+    }
+
     /// Fetches all reminders from EventKit, requesting permission if not yet determined.
     func fetchTasks() async throws -> [NucleTask] {
         try await SentryConfig.traced(operation: "db.query", name: "RemindersService.fetchTasks") {
@@ -256,7 +261,8 @@ class RemindersService: RemindersServiceProtocol {
             notes: ekReminder.notes,
             priority: priority,
             isRecurring: ekReminder.hasRecurrenceRules,
-            calendarItemIdentifier: ekReminder.calendarItemIdentifier
+            calendarItemIdentifier: ekReminder.calendarItemIdentifier,
+            listIdentifier: ekReminder.calendar?.calendarIdentifier
         )
     }
 }

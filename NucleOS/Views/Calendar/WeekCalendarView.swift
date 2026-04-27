@@ -11,6 +11,7 @@ import SwiftUI
 struct WeekCalendarView: View {
     @Binding var selectedDate: Date
     let events: [NucleEvent]
+    var onEditEvent: ((NucleEvent) -> Void)? = nil
     @State private var displayedWeek: Date = Date()
 
     private let calendar = Calendar.current
@@ -94,6 +95,7 @@ struct WeekCalendarView: View {
                         VStack(spacing: 6) {
                             ForEach(eventsForDate(date), id: \.id) { event in
                                 EventWeekCard(event: event)
+                                    .onTapGesture { onEditEvent?(event) }
                             }
                             if eventsForDate(date).isEmpty {
                                 Color.clear.frame(height: 1)

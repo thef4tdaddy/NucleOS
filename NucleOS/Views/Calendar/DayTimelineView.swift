@@ -13,6 +13,7 @@ import Combine
 struct DayTimelineView: View {
     let date: Date
     let events: [NucleEvent]
+    var onEditEvent: ((NucleEvent) -> Void)? = nil
 
     @State private var currentTime = Date()
     @State private var selectedEvent: NucleEvent?
@@ -154,7 +155,10 @@ struct DayTimelineView: View {
                                 .background(eventColor(event).opacity(0.18))
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                                 .padding(.trailing, 16)
-                                .onTapGesture { selectedEvent = event }
+                                .onTapGesture {
+                            if let onEditEvent { onEditEvent(event) }
+                            else { selectedEvent = event }
+                        }
                             }
                             .offset(y: yPosition(for: event.startDate))
                         }

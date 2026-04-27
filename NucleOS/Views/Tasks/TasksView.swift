@@ -2,10 +2,12 @@
 //  TasksView.swift
 //  NucleOS
 //
-//  Full tasks view with read-only reminders from EventKit
+//  Full tasks view with read-only reminders from EventKit.
+//  NUC-73: Reminders list filter chips
 //
 
 import SwiftUI
+import EventKit
 
 /// Full-page view that displays all Reminders tasks, grouped into incomplete and completed sections.
 struct TasksView: View {
@@ -20,14 +22,26 @@ struct TasksView: View {
     @State private var showingQuickAdd = false
     @State private var quickAddText = ""
 
+    // NUC-73: list filter
+    @State private var reminderLists: [EKCalendar] = []
+    @State private var selectedListID: String? = nil   // nil = All Lists
+
     private let remindersService = RemindersService()
 
     private var filteredTasks: [NucleTask] {
-        if searchText.isEmpty { return tasks }
-        return tasks.filter { task in
-            task.title.localizedCaseInsensitiveContains(searchText) ||
-            (task.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
+        var result = tasks
+        // List filter
+        if let listID = selectedListID {
+            result = result.filter { $0.listIdentifier == listID }
         }
+        // Search filter
+        if !searchText.isEmpty {
+            result = result.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText) ||
+                ($0.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
+        return result
     }
 
     var body: some View {
@@ -56,22 +70,19 @@ struct TasksView: View {
                 Spacer()
 
                 if isLoading {
-                    ProgressView()
-                        .tint(.accentPrimary)
+                    ProgressView().tint(.accentPrimary)
                 }
 
-                Button(action: { showingQuickAdd = true }, label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.accentPrimary)
-                })
+                Button(action: { showingQuickAdd = true }) {
+                    Image(systemName: "plus.circle.fill").foregroundColor(.accentPrimary)
+                }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
                 .help("Quick add task")
 
-                Button(action: { isCreatingTask = true }, label: {
-                    Image(systemName: "square.and.pencil")
-                        .foregroundColor(.accentPrimary)
-                })
+                Button(action: { isCreatingTask = true }) {
+                    Image(systemName: "square.and.pencil").foregroundColor(.accentPrimary)
+                }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
                 .help("Add task")
@@ -79,17 +90,46 @@ struct TasksView: View {
                 Button(action: {
                     currentLoadTask?.cancel()
                     currentLoadTask = Task { await loadTasks() }
-                }, label: {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.accentPrimary)
-                })
+                }) {
+                    Image(systemName: "arrow.clockwise").foregroundColor(.accentPrimary)
+                }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
                 .help("Refresh tasks")
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
-            .padding(.bottom, 24)
+            .padding(.bottom, 16)
+
+            // NUC-73: List filter chips
+            if !reminderLists.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ListFilterChip(
+                            title: "All Lists",
+                            color: .accentPrimary,
+                            isSelected: selectedListID == nil,
+                            action: {
+                                selectedListID = nil
+                                persistListFilter(nil)
+                            }
+                        )
+                        ForEach(reminderLists, id: \.calendarIdentifier) { list in
+                            ListFilterChip(
+                                title: list.title,
+                                color: Color(cgColor: list.cgColor),
+                                isSelected: selectedListID == list.calendarIdentifier,
+                                action: {
+                                    selectedListID = list.calendarIdentifier
+                                    persistListFilter(list.calendarIdentifier)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 12)
+                }
+            }
 
             // Search bar
             if !tasks.isEmpty {
@@ -104,24 +144,19 @@ struct TasksView: View {
 
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.textMuted)
+                            Image(systemName: "xmark.circle.fill").foregroundColor(.textMuted)
                         }
                         .buttonStyle(.plain)
                         .padding(.trailing, 8)
                     }
                 }
                 .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.backgroundCard)
-                )
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.backgroundCard))
                 .padding(.horizontal, 32)
-                .padding(.top, 16)
+                .padding(.bottom, 16)
             }
 
-            Divider()
-                .background(Color.border)
+            Divider().background(Color.border)
 
             // Content
             if permissionDenied {
@@ -136,43 +171,34 @@ struct TasksView: View {
                 EmptyStateView(message: "No tasks found")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView(content: {
+                ScrollView {
                     VStack(spacing: 32) {
-                        // Incomplete Tasks Section
                         if !incompleteTasks.isEmpty {
-                            TasksSection(
-                                title: "Incomplete",
-                                tasks: incompleteTasks,
-                                icon: "circle"
-                            )
+                            TasksSection(title: "Incomplete", tasks: incompleteTasks, icon: "circle")
                         }
 
-                        // Completed Tasks Section
                         if !completedTasks.isEmpty {
                             VStack(alignment: .leading, spacing: 16) {
                                 Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        showCompleted.toggle()
-                                    }
-                                }, label: {
+                                    withAnimation(.easeInOut(duration: 0.2)) { showCompleted.toggle() }
+                                }) {
                                     HStack(spacing: 8) {
                                         Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                                             .font(.system(size: 12, weight: .medium))
                                             .foregroundColor(.textMuted)
-
                                         Text("Completed (\(completedTasks.count))")
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(.textSecondary)
                                             .tracking(0.5)
                                     }
-                                })
+                                }
                                 .buttonStyle(.plain)
 
                                 if showCompleted {
                                     VStack(spacing: 8) {
-                                        ForEach(completedTasks, content: { task in
+                                        ForEach(completedTasks) { task in
                                             TaskCardView(task: task)
-                                        })
+                                        }
                                     }
                                 }
                             }
@@ -180,7 +206,7 @@ struct TasksView: View {
                         }
                     }
                     .padding(.vertical, 24)
-                })
+                }
             }
         }
         .background(Color.backgroundPrimary)
@@ -192,9 +218,7 @@ struct TasksView: View {
             QuickAddEventView(text: $quickAddText, isPresented: $showingQuickAdd)
                 .frame(minWidth: 440, minHeight: 380)
         }
-        .task(priority: .userInitiated) {
-            await loadTasks()
-        }
+        .task(priority: .userInitiated) { await loadTasks() }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RemindersDataChanged"))) { _ in
             currentLoadTask?.cancel()
             currentLoadTask = Task { await loadTasks() }
@@ -205,30 +229,22 @@ struct TasksView: View {
                 currentLoadTask = Task { await loadTasks() }
             }
         }
+        .onAppear { loadListFilter() }
     }
 
-    /// Tasks that have not yet been marked complete.
-    private var incompleteTasks: [NucleTask] {
-        filteredTasks.filter { !$0.isCompleted }
-    }
+    private var incompleteTasks: [NucleTask] { filteredTasks.filter { !$0.isCompleted } }
+    private var completedTasks: [NucleTask]  { filteredTasks.filter { $0.isCompleted } }
 
-    /// Tasks that have been marked complete.
-    private var completedTasks: [NucleTask] {
-        filteredTasks.filter { $0.isCompleted }
-    }
-
-    /// Fetches all tasks from Reminders; sets `permissionDenied` if access is not granted.
-    /// Cancels any in-progress load before starting.
     private func loadTasks() async {
-        // Early exit if task was cancelled
         guard !Task.isCancelled else { return }
-
         isLoading = true
         error = nil
         permissionDenied = false
 
         do {
             tasks = try await remindersService.fetchTasks()
+            // Refresh list after tasks load (calendars available after permission granted)
+            reminderLists = remindersService.fetchReminderLists()
         } catch RemindersServiceError.permissionDenied {
             permissionDenied = true
         } catch {
@@ -238,15 +254,59 @@ struct TasksView: View {
         isLoading = false
         currentLoadTask = nil
     }
+
+    private func loadListFilter() {
+        reminderLists = remindersService.fetchReminderLists()
+        selectedListID = UserDefaults.standard.string(forKey: "selected_task_list_id")
+    }
+
+    private func persistListFilter(_ id: String?) {
+        if let id {
+            UserDefaults.standard.set(id, forKey: "selected_task_list_id")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "selected_task_list_id")
+        }
+    }
 }
 
-/// A titled section of ``TaskCardView`` rows with an icon label.
-struct TasksSection: View {
-    /// Section heading (uppercased before display).
+// MARK: - List filter chip (NUC-73)
+
+struct ListFilterChip: View {
     let title: String
-    /// Tasks to render.
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isSelected ? .white : .textMuted)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                isSelected ? Color.accentPrimary : Color.backgroundCard
+            )
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isSelected ? Color.clear : Color.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Tasks section
+
+struct TasksSection: View {
+    let title: String
     let tasks: [NucleTask]
-    /// SF Symbol name shown next to the section title.
     let icon: String
 
     var body: some View {
@@ -255,7 +315,6 @@ struct TasksSection: View {
                 Image(systemName: icon)
                     .font(.system(size: 12))
                     .foregroundColor(.textMuted)
-
                 Text(title.uppercased())
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.textSecondary)
@@ -264,18 +323,18 @@ struct TasksSection: View {
             .padding(.horizontal, 32)
 
             VStack(spacing: 8) {
-                ForEach(tasks, content: { task in
+                ForEach(tasks) { task in
                     TaskCardView(task: task)
-                })
+                }
             }
             .padding(.horizontal, 32)
         }
     }
 }
 
-/// A full-width card displaying a single task's title, due date, and priority badge.
+// MARK: - Task card
+
 struct TaskCardView: View {
-    /// The task to display.
     let task: NucleTask
     @State private var showingDeleteConfirmation = false
     @State private var offset = CGSize.zero
@@ -288,7 +347,6 @@ struct TaskCardView: View {
 
     var body: some View {
         ZStack {
-            // Delete button background
             HStack {
                 Spacer()
                 Button(action: { showingDeleteConfirmation = true }) {
@@ -302,7 +360,6 @@ struct TaskCardView: View {
             }
 
             HStack(spacing: 16) {
-                // Checkbox
                 Button(action: toggleComplete) {
                     Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20))
@@ -320,22 +377,16 @@ struct TaskCardView: View {
                     HStack(spacing: 12) {
                         if let dueDate = task.dueDate {
                             HStack(spacing: 4) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 10))
-
-                                Text(formatDueDate(dueDate))
-                                    .font(.system(size: 12))
+                                Image(systemName: "calendar").font(.system(size: 10))
+                                Text(formatDueDate(dueDate)).font(.system(size: 12))
                             }
                             .foregroundColor(isOverdue(dueDate) ? .red : .textMuted)
                         }
 
                         if task.priority == .high {
                             HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .font(.system(size: 10))
-
-                                Text("High Priority")
-                                    .font(.system(size: 12))
+                                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 10))
+                                Text("High Priority").font(.system(size: 12))
                             }
                             .foregroundColor(.accentLavender)
                         }
@@ -348,17 +399,14 @@ struct TaskCardView: View {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.backgroundCard)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.border, lineWidth: 1)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border, lineWidth: 1))
             )
             .offset(x: offset.width)
             .gesture(
                 DragGesture()
-                    .onChanged { gesture in
-                        if gesture.translation.width < 0 {
-                            offset = CGSize(width: max(-80, gesture.translation.width), height: 0)
+                    .onChanged { g in
+                        if g.translation.width < 0 {
+                            offset = CGSize(width: max(-80, g.translation.width), height: 0)
                         }
                     }
                     .onEnded { _ in
@@ -374,53 +422,38 @@ struct TaskCardView: View {
                     }
             )
             .onTapGesture {
-                withAnimation(.easeInOut) {
-                    offset = .zero
-                    isSwiped = false
-                }
+                withAnimation(.easeInOut) { offset = .zero; isSwiped = false }
             }
             .confirmationDialog("Delete Task", isPresented: $showingDeleteConfirmation) {
                 Button("Delete Task", role: .destructive) {
-                    Task {
-                        try? await remindersProvider.deleteTask(task)
-                    }
+                    Task { try? await remindersProvider.deleteTask(task) }
                 }
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Are you sure you want to delete this task?")
             }
         }
     }
 
-    /// Returns a relative date label ("Today", "Tomorrow", "Yesterday") or a medium-style date string.
     private func formatDueDate(_ date: Date) -> String {
-        let calendar = Calendar.current
-
-        if calendar.isDateInToday(date) {
-            return "Today"
-        } else if calendar.isDateInTomorrow(date) {
-            return "Tomorrow"
-        } else if calendar.isDateInYesterday(date) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter.string(from: date)
-        }
+        let cal = Calendar.current
+        if cal.isDateInToday(date)     { return "Today" }
+        if cal.isDateInTomorrow(date)  { return "Tomorrow" }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let f = DateFormatter(); f.dateStyle = .medium
+        return f.string(from: date)
     }
 
-    /// Returns `true` if `date` is in the past and the task is not yet complete.
     private func isOverdue(_ date: Date) -> Bool {
-        return date < Date() && !task.isCompleted
+        date < Date() && !task.isCompleted
     }
 
-    /// Toggles the completion state of this task.
     private func toggleComplete() {
         Task {
-            var updatedTask = task
-            updatedTask.isCompleted.toggle()
-            if updatedTask.isCompleted {
-                try? await remindersProvider.completeTask(updatedTask)
+            var updated = task
+            updated.isCompleted.toggle()
+            if updated.isCompleted {
+                try? await remindersProvider.completeTask(updated)
             }
         }
     }

@@ -29,28 +29,16 @@ struct NucleTask: Identifiable, Equatable, Sendable {
     var isRecurring: Bool
     /// EventKit calendar item identifier for stable cross-reload lookups.
     var calendarItemIdentifier: String
+    /// EKCalendar identifier of the Reminders list this task belongs to (NUC-73).
+    var listIdentifier: String?
 
     enum Priority: Int, CaseIterable, Hashable, Sendable {
-        /// No priority set — maps to EventKit priority 0 ("none").
-        /// Raw value -1 is an internal ordering sentinel; it does not directly
-        /// correspond to an RFC 5545 PRIORITY value.
         case none = -1
         case low = 0
-        /// Medium importance (RFC 5545 value 5).
         case medium = 1
-        /// High importance (RFC 5545 values 1–4).
         case high = 2
     }
 
-    /// Creates a new `NucleTask`.
-    /// - Parameters:
-    ///   - id: Stable identifier; defaults to a new `UUID`.
-    ///   - title: User-visible reminder title.
-    ///   - isCompleted: Whether the reminder is marked complete. Defaults to `false`.
-    ///   - dueDate: Optional due date/time.
-    ///   - completionDate: Optional date the task was completed.
-    ///   - notes: Optional free-form notes.
-    ///   - priority: Relative importance. Defaults to `.medium`.
     nonisolated init(
         id: UUID = UUID(),
         title: String,
@@ -61,7 +49,8 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         priority: Priority = .medium,
         category: TaskCategory? = nil,
         isRecurring: Bool = false,
-        calendarItemIdentifier: String = ""
+        calendarItemIdentifier: String = "",
+        listIdentifier: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -73,6 +62,7 @@ struct NucleTask: Identifiable, Equatable, Sendable {
         self.category = category
         self.isRecurring = isRecurring
         self.calendarItemIdentifier = calendarItemIdentifier
+        self.listIdentifier = listIdentifier
     }
 
     static func == (lhs: NucleTask, rhs: NucleTask) -> Bool {
